@@ -1,0 +1,43 @@
+import os from 'os';
+import app from "./app";
+import { logger } from "./lib/logger";
+
+function getLocalIp(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+const rawPort = process.env["PORT"] || "3000";
+
+const port = Number(rawPort);
+
+if (Number.isNaN(port) || port <= 0) {
+  throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+const localIp = getLocalIp();
+
+app.listen(port, "0.0.0.0", (err) => {
+  if (err) {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
+  }
+
+  logger.info(
+    {
+      port,
+      localUrl: `http://${localIp}:${port}/api`,
+      localhostUrl: `http://localhost:${port}/api`,
+      mobileHint: `Set EXPO_PUBLIC_API_URL=http://${localIp}:${port}/api in artifacts/mobile/.env`,
+    },
+    `🚀 Server listening at http://${localIp}:${port}/api (LAN) and http://localhost:${port}/api`
+  );
+});
+

@@ -1,0 +1,29 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "workspaces": [
+    "artifacts/admin-web",
+    "artifacts/api-server",
+    "artifacts/mobile",
+    "lib/db",
+    "lib/api-zod",
+    "lib/api-client-react",
+    "scripts"
+  ],
+  "scripts": {
+    "dev": "(test -d artifacts/mobile/dist || npm run build --workspace=artifacts/mobile) && (test -d artifacts/admin-web/dist || npm run build --workspace=artifacts/admin-web) && npm run dev --workspace=artifacts/api-server",
+    "build": "npm run typecheck && npm run build --workspace=artifacts/mobile && npm run build --workspace=artifacts/admin-web && npm run build --workspace=artifacts/api-server",
+    "start": "npm run start --workspace=artifacts/api-server",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "npm run typecheck:libs && npm run typecheck --workspace=artifacts/api-server --workspace=scripts"
+  },
+  "private": true,
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.1"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.4",
+    "typescript": "~5.9.3"
+  }
+}

@@ -1,0 +1,278 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import {
+  products,
+  productImages,
+  productVariants,
+  categories,
+  reviews,
+  userActivity,
+} from "@workspace/db/schema";
+import { eq, like, and, desc, asc, ilike, or, sql, inArray } from "drizzle-orm";
+import { requireAuth, AuthRequest } from "../middlewares/auth";
+import { resolveProductImageUrl } from "../lib/image-url";
+
+const router = Router();
+
+// GET /api/products — list with filters
+router.get("/", async (req, res) => {
+  try {
+    const {
+      q,
+      category,
+      minPrice,
+      maxPrice,
+      sort = "newest",
+      page = "1",
+      limit = "20",
+      featured,
+      inStock,
+    } = req.query as Record<string, string>;
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    const conditions = [eq(products.isActive, true)];
+
+    if (inStock === "true")
+      conditions.push(
+        sql`(${products.stock} > 0 OR EXISTS (SELECT 1 FROM product_variants WHERE product_id = ${products.id} AND stock > 0))`,
+      );
+    if (q) conditions.push(ilike(products.name, `%${q}%`));
+    if (category) {
+      const allCategories = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.isActive, true));
+      const root = allCategories.find(
+        (cat) => cat.id === category || cat.slug === category,
+      );
+      if (!root) {
+        res.json({ data: [], page: pageNum, limit: limitNum });
+        return;
+      }
+      const ids = new Set([root.id]);
+      for (let i = 0; i < allCategories.length; i++) {
+        let changed = false;
+        for (const cat of allCategories)
+          if (cat.parentId && ids.has(cat.parentId) && !ids.has(cat.id)) {
+            ids.add(cat.id);
+            changed = true;
+          }
+        if (!changed) break;
+      }
+      conditions.push(inArray(products.categoryId, [...ids]));
+    }
+    if (minPrice)
+      conditions.push(sql`${products.price} >= ${parseFloat(minPrice)}`);
+    if (maxPrice)
+      conditions.push(sql`${products.price} <= ${parseFloat(maxPrice)}`);
+    if (featured === "true") conditions.push(eq(products.isFeatured, true));
+
+    let orderBy;
+    switch (sort) {
+      case "price_asc":
+        orderBy = asc(products.price);
+        break;
+      case "price_desc":
+        orderBy = desc(products.price);
+        break;
+      case "rating":
+        orderBy = desc(products.avgRating);
+        break;
+      case "popular":
+        orderBy = desc(products.totalSold);
+        break;
+      default:
+        orderBy = desc(products.createdAt);
+    }
+
+    const rows = await db
+      .select({
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        price: products.price,
+        compareAtPrice: products.compareAtPrice,
+        brand: products.brand,
+        stock: products.stock,
+        variantCount: sql<number>`(SELECT COUNT(*)::int FROM product_variants WHERE product_id = ${products.id})`,
+        avgRating: products.avgRating,
+        totalReviews: products.totalReviews,
+        totalSold: products.totalSold,
+        isFeatured: products.isFeatured,
+        categoryId: products.categoryId,
+        createdAt: products.createdAt,
+      })
+      .from(products)
+      .where(and(...conditions))
+      .orderBy(orderBy)
+      .limit(limitNum)
+      .offset(offset);
+
+    // Attach primary image for each product
+    const productIds = rows.map((p) => p.id);
+    let images: { productId: string; url: string }[] = [];
+    if (productIds.length > 0) {
+      const { inArray } = await import("drizzle-orm");
+      images = await db
+        .select({ productId: productImages.productId, url: productImages.url })
+        .from(productImages)
+        .where(
+          and(
+            eq(productImages.isPrimary, true),
+            inArray(productImages.productId, productIds),
+          ),
+        );
+    }
+
+    const imageMap = new Map(images.map((i) => [i.productId, i.url]));
+    const result = rows.map((p) => ({
+      ...p,
+      imageUrl: resolveProductImageUrl(req, imageMap.get(p.id)),
+    }));
+
+    res.json({ data: result, page: pageNum, limit: limitNum });
+  } catch (error) {
+    console.error("Get products error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/products/:id — single product with images, variants, reviews
+router.get("/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id);
+
+    const productRows = await db
+      .select()
+      .from(products)
+      .where(and(eq(products.id, id), eq(products.isActive, true)))
+      .limit(1);
+
+    if (!productRows.length) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+
+    const product = productRows[0];
+
+    const [images, variants, productReviews] = await Promise.all([
+      db
+        .select()
+        .from(productImages)
+        .where(eq(productImages.productId, id))
+        .orderBy(asc(productImages.sortOrder)),
+      db
+        .select()
+        .from(productVariants)
+        .where(eq(productVariants.productId, id)),
+      db
+        .select({
+          id: reviews.id,
+          rating: reviews.rating,
+          title: reviews.title,
+          comment: reviews.comment,
+          isVerified: reviews.isVerified,
+          createdAt: reviews.createdAt,
+          userId: reviews.userId,
+        })
+        .from(reviews)
+        .where(eq(reviews.productId, id))
+        .orderBy(desc(reviews.createdAt))
+        .limit(10),
+    ]);
+
+    res.json({
+      ...product,
+      images: images.map((image) => ({
+        ...image,
+        url: resolveProductImageUrl(req, image.url) || image.url,
+      })),
+      variants,
+      reviews: productReviews,
+    });
+  } catch (error) {
+    console.error("Get product error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/products/:id/reviews
+router.get("/:id/reviews", async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const { page = "1", limit = "10" } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    const reviewRows = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.productId, id))
+      .orderBy(desc(reviews.createdAt))
+      .limit(limitNum)
+      .offset(offset);
+
+    res.json({ data: reviewRows, page: pageNum, limit: limitNum });
+  } catch (error) {
+    console.error("Get reviews error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/products/:id/reviews — add a review (auth required)
+router.post("/:id/reviews", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const { rating, title, comment } = req.body;
+
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!rating || rating < 1 || rating > 5) {
+      res.status(400).json({ error: "Rating must be between 1 and 5" });
+      return;
+    }
+
+    const newReview = await db
+      .insert(reviews)
+      .values({
+        productId: id,
+        userId: req.user.id,
+        rating: parseInt(rating),
+        title,
+        comment,
+      })
+      .returning();
+
+    // Update product avg rating and total reviews
+    await db.execute(sql`
+      UPDATE products SET
+        avg_rating = (SELECT ROUND(AVG(rating)::numeric, 1) FROM reviews WHERE product_id = ${id}),
+        total_reviews = (SELECT COUNT(*) FROM reviews WHERE product_id = ${id}),
+        updated_at = NOW()
+      WHERE id = ${id}
+    `);
+
+    // Track activity
+    await db
+      .insert(userActivity)
+      .values({
+        userId: req.user.id,
+        productId: id,
+        action: "review",
+      })
+      .catch(() => {}); // non-blocking
+
+    res.status(201).json(newReview[0]);
+  } catch (error) {
+    console.error("Add review error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export default router;
