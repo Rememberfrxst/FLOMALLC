@@ -18,6 +18,10 @@ import uploadsRouter from "./uploads";
 
 const router: IRouter = Router();
 
+router.get("/", (_req, res) => {
+  res.json({ status: "ok", app: "FLOMA API", health: "/api/healthz" });
+});
+
 router.use(healthRouter);
 router.use("/storefront", storefrontRouter);
 router.use("/auth", authRouter);

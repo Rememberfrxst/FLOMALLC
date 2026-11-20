@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/services/api";
+import { api } from "@/services/api";
+import { DEMO_OFFERS } from "@/constants/demoCatalog";
 export interface StoreOffer {
   id: string;
   code: string;
@@ -13,10 +14,9 @@ export function useOffers() {
   return (
     useQuery({
       queryKey: ["offers"],
-      queryFn: () =>
-        apiRequest<StoreOffer[]>("/storefront/offers", { auth: false }),
+      queryFn: () => api.storefront.offers(),
       staleTime: 30000,
-    }).data || []
+    }).data || DEMO_OFFERS
   );
 }
 export function offerPrice(price: number, offer: StoreOffer) {

@@ -372,4 +372,286 @@ router.patch("/profile", requireAuth, async (req: AuthRequest, res) => {
       });
   }
 });
+
+import fs from "node:fs";
+import path from "node:path";
+
+interface FirebaseWebConfig {
+  projectId?: string;
+  appId?: string;
+  apiKey?: string;
+  authDomain?: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+  oAuthClientId?: string;
+}
+
+function loadFirebaseConfig(): FirebaseWebConfig {
+  const candidates = [
+    path.resolve(process.cwd(), "firebase-applet-config.json"),
+    path.resolve(process.cwd(), "../../firebase-applet-config.json"),
+    path.resolve(process.cwd(), "../mobile/firebase-applet-config.json"),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, "utf-8")) as FirebaseWebConfig;
+      }
+    } catch {}
+  }
+  return {};
+}
+
+async function verifyGoogleCredentials(payload: {
+  idToken?: string;
+  accessToken?: string;
+}): Promise<{
+  email: string;
+  name: string;
+  avatarUrl?: string;
+} | null> {
+  const cfg = loadFirebaseConfig();
+  const apiKey = process.env.FIREBASE_WEB_API_KEY || cfg.apiKey;
+
+  if (payload.idToken) {
+    // 1. Verify Firebase ID Token via Identity Toolkit (no IAM required)
+    if (apiKey) {
+      try {
+        const res = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: payload.idToken }),
+          },
+        );
+        if (res.ok) {
+          const data = (await res.json()) as {
+            users?: Array<{
+              email?: string;
+              emailVerified?: boolean;
+              displayName?: string;
+              photoUrl?: string;
+            }>;
+          };
+          const fbUser = data.users?.[0];
+          if (fbUser?.email) {
+            return {
+              email: fbUser.email.trim().toLowerCase(),
+              name:
+                fbUser.displayName?.trim() || fbUser.email.split("@")[0] || "FLOMA Shopper",
+              avatarUrl: fbUser.photoUrl,
+            };
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fallback: verify standard Google OAuth ID token
+    try {
+      const res = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(payload.idToken)}`,
+      );
+      if (res.ok) {
+        const info = (await res.json()) as {
+          email?: string;
+          email_verified?: string | boolean;
+          name?: string;
+          picture?: string;
+          aud?: string;
+        };
+        const expectedAud = cfg.oAuthClientId;
+        const audMatches = !expectedAud || !info.aud || info.aud === expectedAud;
+        if (info.email && audMatches) {
+          return {
+            email: info.email.trim().toLowerCase(),
+            name: info.name?.trim() || info.email.split("@")[0] || "FLOMA Shopper",
+            avatarUrl: info.picture,
+          };
+        }
+      }
+    } catch {}
+  }
+
+  if (payload.accessToken) {
+    try {
+      const res = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
+          headers: { Authorization: `Bearer ${payload.accessToken}` },
+        },
+      );
+      if (res.ok) {
+        const info = (await res.json()) as {
+          email?: string;
+          name?: string;
+          picture?: string;
+        };
+        if (info.email) {
+          return {
+            email: info.email.trim().toLowerCase(),
+            name: info.name?.trim() || info.email.split("@")[0] || "FLOMA Shopper",
+            avatarUrl: info.picture,
+          };
+        }
+      }
+    } catch {}
+  }
+
+  return null;
+}
+
+router.post("/google", async (req, res) => {
+  try {
+    const { idToken, accessToken } = req.body ?? {};
+    if (
+      (typeof idToken !== "string" || !idToken.trim()) &&
+      (typeof accessToken !== "string" || !accessToken.trim())
+    ) {
+      res.status(400).json({ error: "Google credential token is required" });
+      return;
+    }
+
+    const verified = await verifyGoogleCredentials({ idToken, accessToken });
+    if (!verified || !verified.email) {
+      res.status(401).json({ error: "Could not verify Google account" });
+      return;
+    }
+
+    const existingUsers = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, verified.email))
+      .limit(1);
+
+    let user = existingUsers[0];
+    if (!user) {
+      const randomSecret = crypto.randomBytes(32).toString("hex");
+      const passwordHash = await bcrypt.hash(randomSecret, 10);
+      const inserted = await db
+        .insert(users)
+        .values({
+          name: verified.name,
+          email: verified.email,
+          passwordHash,
+          role: "customer",
+          isVerified: true,
+          avatarUrl: verified.avatarUrl || null,
+        })
+        .returning();
+      user = inserted[0];
+    } else if ((!user.avatarUrl && verified.avatarUrl) || !user.isVerified) {
+      const updated = await db
+        .update(users)
+        .set({
+          isVerified: true,
+          ...(verified.avatarUrl && !user.avatarUrl
+            ? { avatarUrl: verified.avatarUrl }
+            : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      if (updated[0]) user = updated[0];
+    }
+
+    const tokens = generateTokens(user.id, user.role!);
+
+    await db.insert(refreshTokens).values({
+      userId: user.id,
+      tokenHash: await bcrypt.hash(tokens.refreshToken, 10),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      deviceInfo: req.headers["user-agent"] || "unknown",
+    });
+
+    const { passwordHash: _, totpSecret: __, ...safeUser } = user;
+    res.json({
+      user: safeUser,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    });
+  } catch (error) {
+    console.error("Google auth error:", error);
+    res.status(500).json({ error: "Failed to authenticate with Google" });
+  }
+});
+
+router.get("/google-bridge", (req, res) => {
+  const rawRedirect = typeof req.query.redirect === "string" ? req.query.redirect : "";
+  const allowedRedirect =
+    /^(mobile:\/\/|exp:\/\/|https?:\/\/)/i.test(rawRedirect) ? rawRedirect : "/";
+  const cfg = loadFirebaseConfig();
+  const safeCfg = JSON.stringify({
+    apiKey: cfg.apiKey || "",
+    authDomain: cfg.authDomain || "",
+    projectId: cfg.projectId || "",
+    appId: cfg.appId || "",
+  });
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FLOMA — Continue with Google</title>
+  <style>
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F8FAFC;color:#0F172A;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+    .card{max-width:380px;width:100%;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px;text-align:center;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+    h1{font-size:20px;margin:0 0 8px}
+    p{font-size:14px;color:#475569;margin:0 0 20px;line-height:1.5}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px 18px;border-radius:12px;border:1px solid #CBD5E1;background:#fff;color:#0F172A;font-weight:600;font-size:15px;cursor:pointer}
+    .err{margin-top:14px;color:#DC2626;font-size:13px;display:none}
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign in to FLOMA</h1>
+    <p id="status">Connecting to Google…</p>
+    <button id="go" class="btn" type="button">Continue with Google</button>
+    <div id="err" class="err"></div>
+  </div>
+  <script>
+    const firebaseConfig = ${safeCfg};
+    const redirectTarget = ${JSON.stringify(allowedRedirect)};
+    const statusEl = document.getElementById('status');
+    const errEl = document.getElementById('err');
+    const btn = document.getElementById('go');
+
+    function finish(params) {
+      const sep = redirectTarget.includes('?') ? '&' : '?';
+      window.location.replace(redirectTarget + sep + new URLSearchParams(params).toString());
+    }
+
+    if (!firebaseConfig.apiKey) {
+      errEl.textContent = 'Google Sign-In is not configured on this server.';
+      errEl.style.display = 'block';
+    } else {
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      auth.getRedirectResult().then(async (res) => {
+        if (res && res.user) {
+          statusEl.textContent = 'Signed in! Returning to FLOMA…';
+          const idToken = await res.user.getIdToken();
+          finish({ idToken });
+        }
+      }).catch((e) => {
+        errEl.textContent = e && e.message ? e.message : 'Google sign-in failed';
+        errEl.style.display = 'block';
+      });
+
+      btn.addEventListener('click', () => {
+        errEl.style.display = 'none';
+        statusEl.textContent = 'Opening Google Sign-In…';
+        auth.signInWithRedirect(provider);
+      });
+    }
+  </script>
+</body>
+</html>`);
+});
 export default router;

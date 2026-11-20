@@ -6,6 +6,7 @@ import {
   Share,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { TextInput } from "./TextInput";
 import { Text } from "./Text";
@@ -14,6 +15,9 @@ import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
 import { DesktopStoreHeader } from "./DesktopStoreHeader";
+
+const LOGO_TRANSPARENT = require("@/assets/images/logo-transparent.png");
+
 export function StoreHeader({
   query,
   onChangeQuery,
@@ -36,6 +40,7 @@ export function StoreHeader({
     desktop = useDesktopWeb(),
     [local, setLocal] = useState(""),
     value = query ?? local,
+    setText = onChangeQuery || setLocal,
     fg = inverse ? "#fff" : c.foreground;
   const search = () => {
     if (onSearch) onSearch(value);
@@ -54,70 +59,112 @@ export function StoreHeader({
       />
     );
   }
+  const iconPillStyle = inverse ? s.inverseActionPill : s.plainActionBtn;
   return (
     <View style={s.header}>
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel={back ? "Go back" : "Notifications"}
-        hitSlop={8}
-        onPress={() =>
-          back
-            ? router.canGoBack()
-              ? router.back()
-              : router.replace("/")
-            : router.push("/notifications")
-        }
-      >
-        <Icon
-          name={back ? "chevron-back" : "mail-outline"}
-          color={fg}
-          size={25}
-        />
-      </TouchableOpacity>
+      {back ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
+          style={iconPillStyle}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace("/")
+          }
+        >
+          <Icon name="chevron-back" color={fg} size={22} />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="FLOMA Home"
+          hitSlop={6}
+          onPress={() => router.replace("/")}
+          style={s.logoBtn}
+        >
+          <Image
+            source={LOGO_TRANSPARENT}
+            style={s.brandLogo}
+            contentFit="contain"
+          />
+        </TouchableOpacity>
+      )}
       <View
         style={[
           s.search,
           {
-            backgroundColor: inverse ? "#fff" : c.input,
-            borderColor: inverse ? "#fff" : c.border,
+            backgroundColor: inverse ? "rgba(255,255,255,0.96)" : c.input,
+            borderColor: inverse ? "rgba(255,255,255,0.45)" : c.border,
           },
+          inverse ? s.searchShadowInverse : s.searchShadow,
         ]}
       >
+        <Icon
+          name="search-outline"
+          size={17}
+          color="#64748B"
+          style={s.leadingIcon}
+        />
         <TextInput
           accessibilityLabel="Search products"
-          placeholder="Search"
-          placeholderTextColor="#777"
+          placeholder="Search styles, brands…"
+          placeholderTextColor="#7C8594"
           value={value}
-          onChangeText={onChangeQuery || setLocal}
+          onChangeText={setText}
           onSubmitEditing={search}
           returnKeyType="search"
-          style={[s.input, { color: inverse ? "#111" : c.foreground }]}
+          style={[s.input, { color: inverse ? "#0F172A" : c.foreground }]}
         />
+        {value.length > 0 && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            hitSlop={6}
+            onPress={() => setText("")}
+            style={s.clearBtn}
+          >
+            <Icon name="close-circle" size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Submit search"
           onPress={search}
-          style={[s.submit, { backgroundColor: back ? "transparent" : "#000" }]}
+          style={[
+            s.submit,
+            { backgroundColor: back ? "transparent" : c.primary },
+          ]}
         >
           <Icon
-            name="search-outline"
-            size={24}
-            color={back ? (inverse ? "#111" : c.foreground) : "#fff"}
+            name={back ? "search-outline" : "arrow-forward"}
+            size={16}
+            color={back ? (inverse ? "#0F172A" : c.foreground) : "#FFFFFF"}
           />
         </TouchableOpacity>
       </View>
+      {!back && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Notifications"
+          hitSlop={6}
+          style={iconPillStyle}
+          onPress={() => router.push("/notifications")}
+        >
+          <Icon name="notifications-outline" color={fg} size={21} />
+        </TouchableOpacity>
+      )}
       {back && (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={`Cart, ${cart.itemCount} items`}
-          hitSlop={7}
+          hitSlop={6}
           onPress={() => router.push("/(tabs)/cart")}
-          style={{ position: "relative" }}
+          style={[iconPillStyle, { position: "relative" }]}
         >
-          <Icon name="cart-outline" color={fg} size={26} />
+          <Icon name="cart-outline" color={fg} size={22} />
           {cart.itemCount > 0 && (
             <View style={[s.badge, { backgroundColor: c.accent }]}>
-              <Text style={{ fontSize: 8, color: "#fff" }}>
+              <Text style={{ fontSize: 9, color: "#fff", fontFamily: "GoogleSans_700Bold" }}>
                 {cart.itemCount}
               </Text>
             </View>
@@ -127,7 +174,8 @@ export function StoreHeader({
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={productName ? "Share product" : "Wishlist"}
-        hitSlop={8}
+        hitSlop={6}
+        style={iconPillStyle}
         onPress={() =>
           productName
             ? void Share.share({ message: productName })
@@ -137,7 +185,7 @@ export function StoreHeader({
         <Icon
           name={productName ? "share-outline" : "heart-outline"}
           color={fg}
-          size={25}
+          size={21}
         />
       </TouchableOpacity>
       {back && onMore && (
@@ -145,9 +193,10 @@ export function StoreHeader({
           accessibilityRole="button"
           accessibilityLabel="More product options"
           onPress={onMore}
-          hitSlop={8}
+          style={iconPillStyle}
+          hitSlop={6}
         >
-          <Icon name="ellipsis-horizontal" color={fg} size={23} />
+          <Icon name="ellipsis-horizontal" color={fg} size={21} />
         </TouchableOpacity>
       )}
     </View>
@@ -212,38 +261,90 @@ export function DepartmentTabs({
 }
 const s = StyleSheet.create({
   header: {
-    height: 56,
+    height: 58,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 13,
-    gap: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  logoBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    flexShrink: 0,
+  },
+  brandLogo: {
+    width: 30,
+    height: 30,
+    backgroundColor: "transparent",
+  },
+  plainActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inverseActionPill: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(15, 23, 42, 0.36)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   search: {
     flex: 1,
     minWidth: 0,
-    height: 37,
+    height: 41,
     borderWidth: 1,
-    borderRadius: 23,
+    borderRadius: 21,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
+  },
+  searchShadow: {
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  searchShadowInverse: {
+    shadowColor: "#000000",
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  leadingIcon: {
+    marginLeft: 12,
+    marginRight: 6,
   },
   input: {
     flex: 1,
     minWidth: 0,
     flexBasis: 0,
-    paddingLeft: 14,
-    paddingRight: 3,
-    fontSize: 14,
-    height: 36,
+    paddingLeft: 2,
+    paddingRight: 4,
+    fontSize: 13.5,
+    fontFamily: "GoogleSans_400Regular",
+    height: 40,
     outlineWidth: 0,
   } as any,
+  clearBtn: {
+    paddingHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   submit: {
-    width: 44,
+    width: 31,
+    height: 31,
     flexShrink: 0,
-    height: 33,
-    borderRadius: 22,
-    marginRight: 2,
+    borderRadius: 16,
+    marginRight: 4,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -251,11 +352,12 @@ const s = StyleSheet.create({
   tab: { height: 37, paddingTop: 7, borderBottomWidth: 3 },
   badge: {
     position: "absolute",
-    right: -3,
-    top: -5,
+    right: -1,
+    top: -1,
     borderRadius: 8,
-    minWidth: 13,
-    height: 13,
+    minWidth: 15,
+    height: 15,
+    paddingHorizontal: 3,
     alignItems: "center",
     justifyContent: "center",
   },

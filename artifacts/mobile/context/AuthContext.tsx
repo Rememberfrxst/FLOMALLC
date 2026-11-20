@@ -14,11 +14,13 @@ import {
   getAccessToken,
   ApiUser,
 } from "@/services/api";
+import { signInWithGoogleFirebase, signOutFirebase } from "@/lib/firebaseAuth";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   register: (
     name: string,
     email: string,
@@ -113,6 +115,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [refreshUser],
   );
 
+  const loginWithGoogle = useCallback(async (): Promise<boolean> => {
+    const googleCreds = await signInWithGoogleFirebase();
+    try {
+      const res = await api.auth.google({
+        idToken: googleCreds.idToken,
+        email: googleCreds.email,
+        name: googleCreds.name,
+        avatarUrl: googleCreds.avatarUrl,
+      });
+      await saveTokens(res.accessToken, res.refreshToken);
+      const mappedUser = mapApiUser(res.user);
+      setUser(mappedUser);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
+      await refreshUser();
+      return true;
+    } catch {
+      // Fallback cleanly to verified Google Firebase profile if API is offline
+      if (!googleCreds.email) return false;
+      const localUser: User = {
+        id: googleCreds.uid,
+        name: googleCreds.name || "FLOMA Shopper",
+        email: googleCreds.email,
+        phone: "",
+        addresses: [],
+        role: "user",
+        avatarUrl: googleCreds.avatarUrl,
+      };
+      setUser(localUser);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(localUser));
+      return true;
+    }
+  }, [refreshUser]);
+
   const register = useCallback(
     async (
       name: string,
@@ -136,10 +171,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = useCallback(
     async (name: string, phone: string) => {
-      await api.auth.updateProfile({ name, phone });
-      await refreshUser();
+      const token = await getAccessToken();
+      if (token) {
+        await api.auth.updateProfile({ name, phone });
+        await refreshUser();
+        return;
+      }
+      if (user) {
+        const updated = { ...user, name, phone };
+        setUser(updated);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
     },
-    [refreshUser],
+    [refreshUser, user],
   );
   const logout = useCallback(async () => {
     try {
@@ -147,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       // Ignore errors on logout
     }
+    await signOutFirebase().catch(() => {});
     await clearTokens();
     await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
@@ -154,26 +199,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const addAddress = useCallback(
     async (address: Omit<Address, "id">) => {
-      try {
+      const token = await getAccessToken();
+      if (token) {
         await api.addresses.add(address);
         await refreshUser();
-      } catch (e) {
-        throw e;
+        return;
+      }
+      if (user) {
+        const next: Address = {
+          ...address,
+          id: `addr-${Date.now()}`,
+          isDefault: user.addresses.length === 0 || !!address.isDefault,
+        };
+        const updated = {
+          ...user,
+          addresses: next.isDefault
+            ? [
+                ...user.addresses.map((a) => ({ ...a, isDefault: false })),
+                next,
+              ]
+            : [...user.addresses, next],
+        };
+        setUser(updated);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       }
     },
-    [refreshUser],
+    [refreshUser, user],
   );
 
   const setDefaultAddress = useCallback(
     async (id: string) => {
-      try {
+      const token = await getAccessToken();
+      if (token) {
         await api.addresses.setDefault(id);
         await refreshUser();
-      } catch (e) {
-        throw e;
+        return;
+      }
+      if (user) {
+        const updated = {
+          ...user,
+          addresses: user.addresses.map((a) => ({
+            ...a,
+            isDefault: a.id === id,
+          })),
+        };
+        setUser(updated);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       }
     },
-    [refreshUser],
+    [refreshUser, user],
   );
 
   return (
@@ -182,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
         updateProfile,

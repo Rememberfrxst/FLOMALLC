@@ -8,7 +8,8 @@ import React, {
   useState,
 } from "react";
 import { Order, Product } from "@/constants/data";
-import { api, ApiCartItem, mapApiProduct } from "@/services/api";
+import { DEMO_OFFERS } from "@/constants/demoCatalog";
+import { api, ApiCartItem, getAccessToken, mapApiProduct } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 
 export interface CartItem {
@@ -122,44 +123,49 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
-        if (user) {
-          const guestData = await AsyncStorage.getItem(CART_KEY);
-          if (guestData) {
-            const guestItems = JSON.parse(guestData) as CartItem[];
-            const remaining: CartItem[] = [];
-            for (const item of guestItems) {
-              try {
-                await api.cart.add(
-                  item.product.id,
-                  item.quantity,
-                  item.variantId,
-                );
-              } catch {
-                remaining.push(item);
+        const token = user ? await getAccessToken() : null;
+        if (user && token) {
+          try {
+            const guestData = await AsyncStorage.getItem(CART_KEY);
+            if (guestData) {
+              const guestItems = JSON.parse(guestData) as CartItem[];
+              const remaining: CartItem[] = [];
+              for (const item of guestItems) {
+                try {
+                  await api.cart.add(
+                    item.product.id,
+                    item.quantity,
+                    item.variantId,
+                  );
+                } catch {
+                  remaining.push(item);
+                }
               }
+              if (remaining.length)
+                await AsyncStorage.setItem(CART_KEY, JSON.stringify(remaining));
+              else await AsyncStorage.removeItem(CART_KEY);
             }
-            if (remaining.length)
-              await AsyncStorage.setItem(CART_KEY, JSON.stringify(remaining));
-            else await AsyncStorage.removeItem(CART_KEY);
-          }
-          const apiCart = await api.cart.get();
-          if (apiCart && apiCart.items) {
-            setItems(apiCart.items.map(mapCartItem));
-            if ((apiCart as any).couponCode) {
-              setCoupon((apiCart as any).couponCode);
-              setCouponDiscount(0);
+            const apiCart = await api.cart.get();
+            if (apiCart && apiCart.items) {
+              setItems(apiCart.items.map(mapCartItem));
+              if ((apiCart as any).couponCode) {
+                setCoupon((apiCart as any).couponCode);
+                setCouponDiscount(0);
+              }
+            } else {
+              setItems([]);
             }
-          } else {
-            setItems([]);
+            const apiOrders = await api.orders.list();
+            setOrders(apiOrders.map(mapApiOrder));
+            return;
+          } catch {
+            // Fall through to local AsyncStorage cache when offline
           }
-          const apiOrders = await api.orders.list();
-          setOrders(apiOrders.map(mapApiOrder));
-        } else {
-          const cartData = await AsyncStorage.getItem(CART_KEY);
-          setItems(cartData ? (JSON.parse(cartData) as CartItem[]) : []);
-          const ordersData = await AsyncStorage.getItem(ORDERS_KEY);
-          setOrders(ordersData ? (JSON.parse(ordersData) as Order[]) : []);
         }
+        const cartData = await AsyncStorage.getItem(CART_KEY);
+        setItems(cartData ? (JSON.parse(cartData) as CartItem[]) : []);
+        const ordersData = await AsyncStorage.getItem(ORDERS_KEY);
+        setOrders(ordersData ? (JSON.parse(ordersData) as Order[]) : []);
       } catch (err) {
         console.error(err);
       }
@@ -168,15 +174,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const saveCart = async (newItems: CartItem[]) => {
-    if (!user) {
-      await AsyncStorage.setItem(CART_KEY, JSON.stringify(newItems));
-    }
+    await AsyncStorage.setItem(CART_KEY, JSON.stringify(newItems));
   };
 
   const saveOrders = async (newOrders: Order[]) => {
-    if (!user) {
-      await AsyncStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
-    }
+    await AsyncStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
   };
 
   const loadCartFromApi = async () => {
@@ -204,11 +206,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         quantity > product.stock
       )
         throw new Error("The requested quantity is unavailable");
-      if (user) {
-        await api.cart.add(product.id, quantity, options?.variantId);
-        const result = await api.cart.get();
-        setItems(result.items.map(mapCartItem));
-        return;
+      const token = user ? await getAccessToken() : null;
+      if (user && token) {
+        try {
+          await api.cart.add(product.id, quantity, options?.variantId);
+          const result = await api.cart.get();
+          setItems(result.items.map(mapCartItem));
+          return;
+        } catch (err: any) {
+          const msg = err?.message || "";
+          if (msg.startsWith("API Error 400") || /stock|quantity|available/i.test(msg)) {
+            throw err;
+          }
+          // Offline/local fallback below
+        }
       }
       const key = `${product.id}:${options?.variantId || ""}`;
       const previous = items.find((i) => cartItemKey(i) === key);
@@ -246,22 +257,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           cartItemKey(i) === productId ||
           (!i.variantId && i.product.id === productId),
       );
-      if (user && current?.cartItemId) {
+      const token = user ? await getAccessToken() : null;
+      if (user && token && current?.cartItemId) {
         try {
           await api.cart.remove(current.cartItemId);
           await loadCartFromApi();
+          return;
         } catch (e) {
-          console.error("Could not remove item", e);
+          console.error("Could not remove item from server, updating locally", e);
         }
-      } else {
-        const updated = items.filter(
-          (i) =>
-            cartItemKey(i) !== productId &&
-            (i.variantId || i.product.id !== productId),
-        );
-        setItems(updated);
-        await saveCart(updated);
       }
+      const updated = items.filter(
+        (i) =>
+          cartItemKey(i) !== productId &&
+          (i.variantId || i.product.id !== productId),
+      );
+      setItems(updated);
+      await saveCart(updated);
     },
     [user, items],
   );
@@ -277,23 +289,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           (!i.variantId && i.product.id === productId),
       );
       if (!current || qty > current.product.stock) return;
-      if (user && current.cartItemId) {
+      const token = user ? await getAccessToken() : null;
+      if (user && token && current.cartItemId) {
         try {
           await api.cart.update(current.cartItemId, qty);
           await loadCartFromApi();
+          return;
         } catch (e) {
-          console.error("Could not change quantity", e);
+          console.error("Could not change quantity on server, updating locally", e);
         }
-      } else {
-        const updated = items.map((i) =>
-          cartItemKey(i) === productId ||
-          (!i.variantId && i.product.id === productId)
-            ? { ...i, quantity: qty }
-            : i,
-        );
-        setItems(updated);
-        await saveCart(updated);
       }
+      const updated = items.map((i) =>
+        cartItemKey(i) === productId ||
+        (!i.variantId && i.product.id === productId)
+          ? { ...i, quantity: qty }
+          : i,
+      );
+      setItems(updated);
+      await saveCart(updated);
     },
     [user, items, removeItem],
   );
@@ -302,9 +315,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
     setCoupon("");
     setCouponDiscount(0);
-    if (!user) {
-      AsyncStorage.removeItem(CART_KEY);
-    } else {
+    await AsyncStorage.removeItem(CART_KEY).catch(() => {});
+    const token = user ? await getAccessToken() : null;
+    if (user && token) {
       try {
         await api.cart.clear();
       } catch (err) {
@@ -313,20 +326,53 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const subtotal = items.reduce(
+    (sum, i) => sum + i.product.price * i.quantity,
+    0,
+  );
+
+  const applyDemoCoupon = useCallback(
+    (rawCode: string): number | null => {
+      const normalized = rawCode.trim().toUpperCase();
+      const offer = DEMO_OFFERS.find((o) => o.code === normalized);
+      if (!offer) return null;
+      const minOrder = Number(offer.minOrderValue ?? 0);
+      if (subtotal < minOrder) return null;
+      const rawDiscount =
+        offer.discountType === "percentage"
+          ? Math.round((subtotal * Number(offer.discountValue)) / 100)
+          : Number(offer.discountValue);
+      const maxCap = offer.maxDiscount ? Number(offer.maxDiscount) : Infinity;
+      return Math.max(0, Math.min(rawDiscount, maxCap));
+    },
+    [subtotal],
+  );
+
   const applyCoupon = useCallback(
     async (code: string) => {
       if (coupon) return "already" as const;
-      if (!user) return "invalid" as const;
-      try {
-        const result = await api.cart.applyCoupon(code);
-        setCoupon(result.code);
-        setCouponDiscount(result.discount);
-        return "valid" as const;
-      } catch {
-        return "invalid" as const;
+      const normalized = code.trim().toUpperCase();
+      if (!normalized) return "invalid" as const;
+      const token = user ? await getAccessToken() : null;
+      if (user && token) {
+        try {
+          const result = await api.cart.applyCoupon(normalized);
+          setCoupon(result.code);
+          setCouponDiscount(result.discount);
+          return "valid" as const;
+        } catch {
+          // Fall through to demo coupon check if offline
+        }
       }
+      const fallbackDiscount = applyDemoCoupon(normalized);
+      if (fallbackDiscount !== null) {
+        setCoupon(normalized);
+        setCouponDiscount(fallbackDiscount);
+        return "valid" as const;
+      }
+      return "invalid" as const;
     },
-    [coupon, user],
+    [coupon, user, applyDemoCoupon],
   );
 
   const removeCoupon = useCallback(() => {
@@ -334,10 +380,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCouponDiscount(0);
   }, []);
 
-  const subtotal = items.reduce(
-    (sum, i) => sum + i.product.price * i.quantity,
-    0,
-  );
   const deliveryFee =
     subtotal === 0 || subtotal >= store.freeShippingThreshold
       ? 0
@@ -345,23 +387,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const discountAmount = Math.min(subtotal, couponDiscount);
   const total = subtotal + deliveryFee - discountAmount;
   useEffect(() => {
-    if (!coupon || !user) return;
+    if (!coupon) return;
     let active = true;
-    api.cart
-      .applyCoupon(coupon)
-      .then((r) => {
-        if (active) setCouponDiscount(r.discount);
-      })
-      .catch(() => {
-        if (active) {
-          setCoupon("");
-          setCouponDiscount(0);
+    getAccessToken()
+      .then((token) => {
+        if (user && token) {
+          return api.cart
+            .applyCoupon(coupon)
+            .then((r) => {
+              if (active) setCouponDiscount(r.discount);
+            })
+            .catch(() => {
+              if (active) {
+                const d = applyDemoCoupon(coupon);
+                if (d !== null) setCouponDiscount(d);
+                else {
+                  setCoupon("");
+                  setCouponDiscount(0);
+                }
+              }
+            });
         }
-      });
+        const d = applyDemoCoupon(coupon);
+        if (active) {
+          if (d !== null) setCouponDiscount(d);
+          else {
+            setCoupon("");
+            setCouponDiscount(0);
+          }
+        }
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
-  }, [coupon, subtotal, user]);
+  }, [coupon, subtotal, user, applyDemoCoupon]);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   const placeOrder = useCallback(
@@ -369,7 +429,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       paymentMethod: Order["paymentMethod"],
       address: Order["address"],
     ) => {
-      if (user) {
+      if (!user) {
+        throw new Error("Please sign in to place an order");
+      }
+      const token = await getAccessToken();
+      if (token) {
         try {
           const res = await api.orders.place(
             address.id,
@@ -378,17 +442,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           );
           const newOrder = mapApiOrder(res);
           setOrders((prev) => [newOrder, ...prev]);
-          clearCart();
+          await clearCart();
           return newOrder;
-        } catch (err) {
-          console.error("Failed to place order:", err);
-          throw err;
+        } catch (err: any) {
+          if (/address|stock|empty|coupon|invalid/i.test(err?.message || "")) {
+            throw err;
+          }
         }
-      } else {
-        throw new Error("Please sign in to place an order");
       }
+      const localOrder: Order = {
+        id: `FL-${Date.now().toString().slice(-6)}`,
+        items: items.map((i) => ({
+          productId: i.product.id,
+          name: i.product.name,
+          price: i.product.price,
+          quantity: i.quantity,
+          image: i.product.image,
+        })),
+        total,
+        status: "confirmed",
+        date: new Date().toISOString(),
+        estimatedDelivery: new Date(
+          Date.now() + 4 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        paymentMethod,
+        address,
+      };
+      const updatedOrders = [localOrder, ...orders];
+      setOrders(updatedOrders);
+      await saveOrders(updatedOrders);
+      await clearCart();
+      return localOrder;
     },
-    [items, total, clearCart, user, coupon],
+    [items, total, clearCart, user, coupon, orders],
   );
 
   return (

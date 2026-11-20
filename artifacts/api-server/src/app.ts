@@ -53,6 +53,7 @@ const paymentLimiter = rateLimit({
 
 app.use("/api", globalLimiter);
 app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/google", authLimiter);
 app.use("/api/auth/admin-login", authLimiter);
 app.use("/api/auth/admin-login-2fa", authLimiter);
 app.use("/api/uploads", uploadLimiter);

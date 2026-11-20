@@ -39,7 +39,14 @@ router.get("/", async (req, res) => {
       conditions.push(
         sql`(${products.stock} > 0 OR EXISTS (SELECT 1 FROM product_variants WHERE product_id = ${products.id} AND stock > 0))`,
       );
-    if (q) conditions.push(ilike(products.name, `%${q}%`));
+    if (q)
+      conditions.push(
+        or(
+          ilike(products.name, `%${q}%`),
+          ilike(products.brand, `%${q}%`),
+          ilike(products.description, `%${q}%`),
+        )!,
+      );
     if (category) {
       const allCategories = await db
         .select()

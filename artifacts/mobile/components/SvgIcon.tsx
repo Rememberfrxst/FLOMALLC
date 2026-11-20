@@ -204,7 +204,41 @@ const ICONS: Record<string, Renderer> = {
   /* ── Mic ── */
   'mic-outline': (c) => sp(c, 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8'),
 
-  /* ── Information ── */
+  /* ── Google G Logo ── */
+  'google': () => (
+    <>
+      <Path
+        d="M21.805 12.23c0-.68-.06-1.34-.175-1.97H12v3.73h5.505a4.706 4.706 0 0 1-2.04 3.09v2.57h3.305c1.935-1.78 3.035-4.41 3.035-7.42z"
+        fill="#4285F4"
+      />
+      <Path
+        d="M12 22c2.755 0 5.065-.91 6.755-2.46l-3.305-2.57c-.915.615-2.085.98-3.45.98-2.655 0-4.905-1.79-5.71-4.2H2.875v2.65A10 10 0 0 0 12 22z"
+        fill="#34A853"
+      />
+      <Path
+        d="M6.29 13.75A5.99 5.99 0 0 1 5.97 12c0-.61.11-1.2.32-1.75V7.6H2.875A10 10 0 0 0 2 12c0 1.61.385 3.135 1.075 4.4l3.215-2.65z"
+        fill="#FBBC05"
+      />
+      <Path
+        d="M12 6.05c1.5 0 2.845.515 3.905 1.53l2.93-2.93C17.06 2.99 14.755 2 12 2a10 10 0 0 0-9.125 5.6l3.415 2.65C7.095 7.84 9.345 6.05 12 6.05z"
+        fill="#EA4335"
+      />
+    </>
+  ),
+
+  /* ── Information & Alerts ── */
+  'alert-circle-outline': (c) => (
+    <>
+      <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
+      <Path d="M12 8v5M12 16h.01" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" />
+    </>
+  ),
+  'information-circle-outline': (c) => (
+    <>
+      <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
+      <Path d="M12 16v-4M12 8h.01" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" />
+    </>
+  ),
   'information-circle': (c) => (
     <>
       <Circle cx={12} cy={12} r={10} fill={c} />

@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SvgIcon from '@/components/SvgIcon';
 import { useColors } from '@/hooks/useColors';
 import { formatPrice, Order } from '@/constants/data';
-import { api } from '@/services/api';
+import { api, getAccessToken } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { useDesktopWeb } from '@/hooks/useDesktopWeb';
 import DesktopStoreHeader from '@/components/DesktopStoreHeader';
 import DesktopStoreFooter from '@/components/DesktopStoreFooter';
@@ -62,7 +63,16 @@ function OrderCard({ order }: { order: Order }) {
       </View>
       <View style={styles.itemsRow}>
         {order.items.slice(0, 3).map((item, i) => (
-          <Image key={i} source={{ uri: item.image }} style={styles.miniImage} resizeMode="cover" />
+          <Image
+            key={i}
+            source={
+              item.image
+                ? { uri: item.image }
+                : require('@/assets/images/logo-transparent.png')
+            }
+            style={styles.miniImage}
+            resizeMode="cover"
+          />
         ))}
         {order.items.length > 3 && (
           <View style={[styles.moreItems, { backgroundColor: colors.muted }]}>
@@ -100,6 +110,7 @@ export default function OrdersScreen() {
   const [tab, setTab] = useState<'active' | 'past'>('active');
 
   const { user } = useAuth();
+  const { orders: contextOrders } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -107,6 +118,11 @@ export default function OrdersScreen() {
     if (!user) { setOrders([]); return; }
     setLoading(true);
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        setOrders(contextOrders);
+        return;
+      }
       const data = await api.orders.list();
       setOrders(data.map((o: any) => ({
         id: o.id,
@@ -124,12 +140,12 @@ export default function OrdersScreen() {
         paymentMethod: o.paymentMethod,
         address: { id: '', name: '', line1: '', city: '', state: '', pincode: '', phone: '', isDefault: false },
       })));
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setOrders(contextOrders);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, contextOrders]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 

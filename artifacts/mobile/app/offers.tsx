@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { Text } from "@/components/Text";
 import { LoadState } from "@/components/ShopUI";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/services/api";
+import { api } from "@/services/api";
 import type { StoreOffer } from "@/hooks/useOffers";
 import { useColors } from "@/hooks/useColors";
 import { formatPrice } from "@/constants/data";
@@ -17,8 +17,7 @@ export default function Offers() {
   const desktop = useDesktopWeb();
   const query = useQuery({
     queryKey: ["offers"],
-    queryFn: () =>
-      apiRequest<StoreOffer[]>("/storefront/offers", { auth: false }),
+    queryFn: () => api.storefront.offers(),
   });
 
   const body = (

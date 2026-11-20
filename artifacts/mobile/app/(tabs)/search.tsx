@@ -64,6 +64,9 @@ export default function Categories() {
       };
     }, []),
   );
+  useEffect(() => {
+    if (typeof params.q === "string") setQuery(params.q);
+  }, [params.q]);
   useEffect(() => setPage(1), [query, department, section]);
   useEffect(() => {
     let active = true;

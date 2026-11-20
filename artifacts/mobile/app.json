@@ -2,16 +2,16 @@
   "expo": {
     "name": "FLOMA",
     "slug": "mobile",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/logo-transparent.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2C4152"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
@@ -25,10 +25,14 @@
     "android": {
       "usesCleartextTraffic": false,
       "package": "com.floma.shop",
-      "versionCode": 3
+      "versionCode": 4,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/logo-transparent.png"
     },
     "plugins": [
       "expo-router",

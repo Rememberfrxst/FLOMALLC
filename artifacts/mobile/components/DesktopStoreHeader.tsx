@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { TextInput } from "./TextInput";
 import { Text } from "./Text";
@@ -217,8 +218,13 @@ export function DesktopStoreHeader({
               closeImmediately();
               router.replace("/");
             }}
-            style={s.logoWrap}
+            style={[s.logoWrap, { flexDirection: "row", alignItems: "center", gap: 9 }]}
           >
+            <Image
+              source={require("@/assets/images/logo-transparent.png")}
+              style={{ width: 28, height: 28, backgroundColor: "transparent" }}
+              contentFit="contain"
+            />
             <Text numberOfLines={1} style={[s.logo, { color: c.navy }]}>
               FLOMA
             </Text>

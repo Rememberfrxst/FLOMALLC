@@ -23,7 +23,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         .then((data) => {
           setItems(data.map((item: ApiWishlistItem) => mapApiProduct(item.product)));
         })
-        .catch(err => console.error("Failed to fetch wishlist:", err));
+        .catch(() => {
+          AsyncStorage.getItem(STORAGE_KEY).then(data => {
+            if (data) setItems(JSON.parse(data) as Product[]);
+          }).catch(() => {});
+        });
     } else {
       AsyncStorage.getItem(STORAGE_KEY).then(data => {
         if (data) setItems(JSON.parse(data) as Product[]);
@@ -33,10 +37,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   const toggle = useCallback(async (product: Product) => {
     const exists = items.some(p => p.id === product.id);
-    
-    // Optimistic update
     const updated = exists ? items.filter(p => p.id !== product.id) : [...items, product];
     setItems(updated);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
 
     if (user) {
       try {
@@ -45,13 +48,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         } else {
           await api.wishlist.add(product.id);
         }
-      } catch (error) {
-        console.error("Failed to toggle wishlist item on server:", error);
-        // Rollback on fail
-        setItems(items);
+      } catch {
+        // Keep optimistic local wishlist saved if offline
       }
-    } else {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
     }
   }, [items, user]);
 

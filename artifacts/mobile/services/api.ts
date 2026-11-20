@@ -128,21 +128,47 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+import {
+  DEMO_BANNERS,
+  DEMO_CATEGORIES,
+  DEMO_OFFERS,
+  DEMO_PRODUCTS,
+  DEMO_STOREFRONT,
+  filterDemoProducts,
+  getDemoProductById,
+} from "@/constants/demoCatalog";
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   auth?: boolean;
+  timeoutMs?: number;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = 7000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function apiRequest<T = unknown>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, auth = true } = options;
+  const { method = "GET", body, auth = true, timeoutMs = 7000 } = options;
 
   const buildHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      Accept: "application/json",
     };
     if (auth) {
       const token = await getAccessToken();
@@ -152,11 +178,15 @@ export async function apiRequest<T = unknown>(
   };
 
   const doFetch = async (headers: Record<string, string>): Promise<Response> =>
-    fetch(`${getApiBaseUrl()}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    fetchWithTimeout(
+      `${getApiBaseUrl()}${path}`,
+      {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      },
+      timeoutMs,
+    );
 
   let headers = await buildHeaders();
   let res = await doFetch(headers);
@@ -173,8 +203,11 @@ export async function apiRequest<T = unknown>(
   if (!res.ok) {
     let errorMessage = `API Error ${res.status}`;
     try {
-      const errData = await res.json();
-      errorMessage = errData.error ?? errData.message ?? errorMessage;
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errData = await res.json();
+        errorMessage = errData.error ?? errData.message ?? errorMessage;
+      }
     } catch {}
     throw new Error(errorMessage);
   }
@@ -182,12 +215,41 @@ export async function apiRequest<T = unknown>(
   // Handle 204 No Content
   if (res.status === 204) return undefined as T;
 
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("Server returned a non-JSON response");
+  }
+
   return res.json() as Promise<T>;
 }
 
 // ─── Typed API helpers ──────────────────────────────────────────────────────
 
 export const api = {
+  // Storefront & Offers (with instant bundled demo fallback)
+  storefront: {
+    get: async () => {
+      try {
+        return await apiRequest<typeof DEMO_STOREFRONT>("/storefront", {
+          auth: false,
+        });
+      } catch {
+        return DEMO_STOREFRONT;
+      }
+    },
+    offers: async () => {
+      try {
+        const list = await apiRequest<typeof DEMO_OFFERS>(
+          "/storefront/offers",
+          { auth: false },
+        );
+        return list.length > 0 ? list : DEMO_OFFERS;
+      } catch {
+        return DEMO_OFFERS;
+      }
+    },
+  },
+
   // Auth
   auth: {
     login: (email: string, password: string) =>
@@ -199,6 +261,17 @@ export const api = {
       apiRequest<{ user: ApiUser; accessToken: string; refreshToken: string }>(
         "/auth/register",
         { method: "POST", body: { name, email, phone, password }, auth: false },
+      ),
+    google: (payload: {
+      idToken?: string;
+      accessToken?: string;
+      email?: string;
+      name?: string;
+      avatarUrl?: string;
+    }) =>
+      apiRequest<{ user: ApiUser; accessToken: string; refreshToken: string }>(
+        "/auth/google",
+        { method: "POST", body: payload, auth: false },
       ),
     me: () => apiRequest<ApiUser>("/auth/me"),
     updateProfile: (body: { name: string; phone?: string }) =>
@@ -213,29 +286,74 @@ export const api = {
 
   // Products
   products: {
-    list: (params?: Record<string, string | number | boolean>) => {
+    list: async (params?: Record<string, string | number | boolean>) => {
       const qs = params
         ? "?" +
           new URLSearchParams(
-            Object.entries(params).map(([k, v]) => [k, String(v)]),
+            Object.entries(params)
+              .filter(([, v]) => v !== "" && v !== undefined && v !== null)
+              .map(([k, v]) => [k, String(v)]),
           ).toString()
         : "";
-      return apiRequest<{
-        data: ApiProduct[];
-        total: number;
-        page: number;
-        limit: number;
-      }>(`/products${qs}`, { auth: false });
-    },
-    get: (id: string) =>
-      apiRequest<
-        ApiProduct & {
-          images: ApiProductImage[];
-          variants: ApiProductVariant[];
+      try {
+        const res = await apiRequest<{
+          data: ApiProduct[];
+          total: number;
+          page: number;
+          limit: number;
+        }>(`/products${qs}`, { auth: false });
+        if (
+          res.data.length === 0 &&
+          !params?.q &&
+          !params?.minPrice &&
+          !params?.maxPrice &&
+          (!params?.page || Number(params.page) === 1)
+        ) {
+          return filterDemoProducts(params) as {
+            data: ApiProduct[];
+            total: number;
+            page: number;
+            limit: number;
+          };
         }
-      >(`/products/${id}`, { auth: false }),
-    reviews: (id: string) =>
-      apiRequest<ApiReview[]>(`/products/${id}/reviews`, { auth: false }),
+        return res;
+      } catch {
+        return filterDemoProducts(params) as {
+          data: ApiProduct[];
+          total: number;
+          page: number;
+          limit: number;
+        };
+      }
+    },
+    get: async (id: string) => {
+      try {
+        return await apiRequest<
+          ApiProduct & {
+            images: ApiProductImage[];
+            variants: ApiProductVariant[];
+          }
+        >(`/products/${id}`, { auth: false });
+      } catch {
+        const fallback = getDemoProductById(id);
+        if (fallback) {
+          return fallback as unknown as ApiProduct & {
+            images: ApiProductImage[];
+            variants: ApiProductVariant[];
+          };
+        }
+        throw new Error("Product not found");
+      }
+    },
+    reviews: async (id: string) => {
+      try {
+        return await apiRequest<ApiReview[]>(`/products/${id}/reviews`, {
+          auth: false,
+        });
+      } catch {
+        return [];
+      }
+    },
     addReview: (
       id: string,
       body: { rating: number; title?: string; comment?: string },
@@ -244,12 +362,28 @@ export const api = {
 
   // Categories
   categories: {
-    list: () => apiRequest<ApiCategory[]>("/categories", { auth: false }),
+    list: async () => {
+      try {
+        const list = await apiRequest<ApiCategory[]>("/categories", {
+          auth: false,
+        });
+        return list.length > 0 ? list : (DEMO_CATEGORIES as ApiCategory[]);
+      } catch {
+        return DEMO_CATEGORIES as ApiCategory[];
+      }
+    },
   },
 
   // Banners
   banners: {
-    list: () => apiRequest<ApiBanner[]>("/banners", { auth: false }),
+    list: async () => {
+      try {
+        const list = await apiRequest<ApiBanner[]>("/banners", { auth: false });
+        return list.length > 0 ? list : (DEMO_BANNERS as ApiBanner[]);
+      } catch {
+        return DEMO_BANNERS as ApiBanner[];
+      }
+    },
   },
 
   // Cart
@@ -382,17 +516,54 @@ export const api = {
       apiRequest("/recommendations/track", {
         method: "POST",
         body: { action, productId, searchQuery },
-      }),
-    forYou: () =>
-      apiRequest<{ data: ApiProduct[] }>("/recommendations/for-you"),
-    similar: (productId: string) =>
-      apiRequest<{ data: ApiProduct[] }>(
-        `/recommendations/similar/${productId}`,
-      ),
-    trending: () =>
-      apiRequest<{ data: ApiProduct[] }>("/recommendations/trending"),
-    recentlyViewed: () =>
-      apiRequest<{ data: ApiProduct[] }>("/recommendations/recently-viewed"),
+      }).catch(() => undefined),
+    forYou: async () => {
+      try {
+        return await apiRequest<{ data: ApiProduct[] }>(
+          "/recommendations/for-you",
+        );
+      } catch {
+        return {
+          data: DEMO_PRODUCTS.filter((p) => p.isFeatured) as unknown as ApiProduct[],
+        };
+      }
+    },
+    similar: async (productId: string) => {
+      try {
+        return await apiRequest<{ data: ApiProduct[] }>(
+          `/recommendations/similar/${productId}`,
+        );
+      } catch {
+        return {
+          data: DEMO_PRODUCTS.filter((p) => p.id !== productId).slice(
+            0,
+            8,
+          ) as unknown as ApiProduct[],
+        };
+      }
+    },
+    trending: async () => {
+      try {
+        return await apiRequest<{ data: ApiProduct[] }>(
+          "/recommendations/trending",
+        );
+      } catch {
+        return {
+          data: [...DEMO_PRODUCTS]
+            .sort((a, b) => b.totalSold - a.totalSold)
+            .slice(0, 10) as unknown as ApiProduct[],
+        };
+      }
+    },
+    recentlyViewed: async () => {
+      try {
+        return await apiRequest<{ data: ApiProduct[] }>(
+          "/recommendations/recently-viewed",
+        );
+      } catch {
+        return { data: [] };
+      }
+    },
   },
 
   // Payments (Razorpay)

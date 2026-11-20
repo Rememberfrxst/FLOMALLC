@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { TextInput } from '@/components/TextInput';
 import { Text } from '@/components/Text';
 import { router } from 'expo-router';
@@ -15,12 +16,13 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const desktop = useDesktopWeb();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const isWeb = Platform.OS === 'web';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
 
@@ -48,6 +50,29 @@ export default function LoginScreen() {
       setErrorMsg('Unable to sign in right now. Please check your connection and try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMsg('');
+    setInfoMsg('');
+    setGoogleLoading(true);
+    try {
+      const success = await loginWithGoogle();
+      if (success) {
+        handleClose();
+      } else {
+        setErrorMsg('Google sign-in could not be completed. Please try again.');
+      }
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('popup-closed-by-user') || msg.includes('cancelled')) {
+        setErrorMsg('Google sign-in was cancelled.');
+      } else {
+        setErrorMsg(msg || 'Could not connect to Google Sign-In right now.');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -82,9 +107,11 @@ export default function LoginScreen() {
       >
         {/* Brand */}
         <View style={styles.brand}>
-          <View style={[styles.logo, { backgroundColor: colors.navy }]}>
-            <Text style={styles.logoText}>F</Text>
-          </View>
+          <Image
+            source={require('@/assets/images/logo-transparent.png')}
+            style={styles.logoImg}
+            contentFit="contain"
+          />
           <Text style={[styles.brandName, { color: colors.navy }]}>FLOMA</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Curated Fashion & Lifestyle</Text>
         </View>
@@ -115,6 +142,32 @@ export default function LoginScreen() {
 
         {/* Form */}
         <View style={styles.form}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
+            style={[
+              styles.googleBtn,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderRadius: desktop ? 2 : 14,
+              },
+            ]}
+            onPress={handleGoogleLogin}
+            disabled={loading || googleLoading}
+          >
+            <SvgIcon name="google" size={20} />
+            <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
+              {googleLoading ? 'Connecting to Google...' : desktop ? 'CONTINUE WITH GOOGLE' : 'Continue with Google'}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.orRow}>
+            <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.orText, { color: colors.mutedForeground }]}>OR SIGN IN WITH EMAIL</Text>
+            <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+          </View>
+
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
             <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.border, borderRadius: desktop ? 2 : 12 }]}>
@@ -178,7 +231,7 @@ export default function LoginScreen() {
               },
             ]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || googleLoading}
           >
             <Text style={[styles.loginBtnText, { color: '#FFFFFF' }]}>
               {loading ? 'Signing In...' : desktop ? 'SIGN IN' : 'Sign In'}
@@ -188,7 +241,7 @@ export default function LoginScreen() {
           {/* Divider */}
           <View style={styles.orRow}>
             <View style={[styles.orLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.orText, { color: colors.mutedForeground }]}>OR</Text>
+            <Text style={[styles.orText, { color: colors.mutedForeground }]}>NEW TO FLOMA?</Text>
             <View style={[styles.orLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -212,8 +265,7 @@ const styles = StyleSheet.create({
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   inner: { width: '100%', maxWidth: 460, alignSelf: 'center', paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40, gap: 8 },
   brand: { alignItems: 'center', gap: 8, marginBottom: 16 },
-  logo: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  logoText: { fontSize: 28, fontFamily: 'GoogleSans_700Bold', color: '#fff' },
+  logoImg: { width: 68, height: 68, backgroundColor: 'transparent' },
   brandName: { fontSize: 22, fontFamily: 'GoogleSans_700Bold', letterSpacing: 3 },
   tagline: { fontSize: 13, fontFamily: 'GoogleSans_400Regular' },
   title: { fontSize: 26, fontFamily: 'GoogleSans_700Bold', marginTop: 8 },
@@ -221,6 +273,15 @@ const styles = StyleSheet.create({
   hint: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, borderWidth: 1 },
   hintText: { fontSize: 13, fontFamily: 'GoogleSans_500Medium', flex: 1 },
   form: { gap: 14, marginTop: 8 },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+  },
+  googleBtnText: { fontSize: 14.5, fontFamily: 'GoogleSans_600SemiBold', letterSpacing: 0.3 },
   field: { gap: 6 },
   label: { fontSize: 14, fontFamily: 'GoogleSans_500Medium' },
   inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 14, height: 50, borderWidth: 1 },
@@ -231,7 +292,7 @@ const styles = StyleSheet.create({
   loginBtnText: { fontSize: 15, letterSpacing: 0.8, fontFamily: 'GoogleSans_700Bold' },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   orLine: { flex: 1, height: 1 },
-  orText: { fontSize: 13, fontFamily: 'GoogleSans_500Medium' },
+  orText: { fontSize: 11.5, fontFamily: 'GoogleSans_500Medium', letterSpacing: 0.6 },
   registerBtn: { paddingVertical: 14, borderRadius: 14, alignItems: 'center', borderWidth: 1.5 },
   registerBtnText: { fontSize: 14, letterSpacing: 0.8, fontFamily: 'GoogleSans_700Bold' },
 });

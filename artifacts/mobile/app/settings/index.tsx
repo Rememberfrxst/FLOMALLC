@@ -13,6 +13,7 @@ import {
   Share,
 } from "react-native";
 import { Text } from "@/components/Text";
+import { Image } from "expo-image";
 import SvgIcon from "@/components/SvgIcon";
 import { useColors } from "@/hooks/useColors";
 import { useTheme, ThemeMode } from "@/context/ThemeContext";
@@ -313,9 +314,11 @@ export default function SettingsScreen() {
 
       {/* App Info */}
       <View style={[styles.appInfo, { marginTop: 8 }]}>
-        <View style={[styles.appLogo, { backgroundColor: colors.navy }]}>
-          <Text style={styles.appLogoText}>F</Text>
-        </View>
+        <Image
+          source={require("@/assets/images/logo-transparent.png")}
+          style={styles.appLogoImg}
+          contentFit="contain"
+        />
         <Text style={[styles.appName, { color: colors.foreground }]}>
           FLOMA
         </Text>
@@ -403,17 +406,10 @@ const styles = StyleSheet.create({
   },
   menuLabel: { flex: 1, fontSize: 15, fontFamily: "GoogleSans_500Medium" },
   appInfo: { alignItems: "center", padding: 28, gap: 8 },
-  appLogo: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appLogoText: {
-    fontSize: 28,
-    fontFamily: "GoogleSans_700Bold",
-    color: "#fff",
+  appLogoImg: {
+    width: 68,
+    height: 68,
+    backgroundColor: "transparent",
   },
   appName: { fontSize: 18, fontFamily: "GoogleSans_700Bold", letterSpacing: 3 },
   appTagline: { fontSize: 13, fontFamily: "GoogleSans_400Regular" },
