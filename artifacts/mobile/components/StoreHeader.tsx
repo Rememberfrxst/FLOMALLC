@@ -24,6 +24,7 @@ export function StoreHeader({
   onSearch,
   back = false,
   inverse = false,
+  headerSolid = false,
   productName,
   onMore,
 }: {
@@ -32,6 +33,7 @@ export function StoreHeader({
   onSearch?: (q: string) => void;
   back?: boolean;
   inverse?: boolean;
+  headerSolid?: boolean;
   productName?: string;
   onMore?: () => void;
 }) {
@@ -41,11 +43,13 @@ export function StoreHeader({
     [local, setLocal] = useState(""),
     value = query ?? local,
     setText = onChangeQuery || setLocal,
-    fg = inverse ? "#fff" : c.foreground;
+    fg = inverse ? "#FFFFFF" : headerSolid ? "#0F172A" : c.foreground;
+
   const search = () => {
     if (onSearch) onSearch(value);
     else router.push({ pathname: "/products", params: { q: value } });
   };
+
   // The native/mobile header stays intact. Only a wide browser gets the
   // marketplace navigation, so changing web UX cannot alter the app layout.
   if (desktop) {
@@ -59,7 +63,9 @@ export function StoreHeader({
       />
     );
   }
-  const iconPillStyle = inverse ? s.inverseActionPill : s.plainActionBtn;
+
+  const iconBtnStyle = inverse ? s.inverseActionBtn : s.plainActionBtn;
+
   return (
     <View style={s.header}>
       {back ? (
@@ -67,7 +73,7 @@ export function StoreHeader({
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={8}
-          style={iconPillStyle}
+          style={iconBtnStyle}
           onPress={() =>
             router.canGoBack() ? router.back() : router.replace("/")
           }
@@ -89,31 +95,30 @@ export function StoreHeader({
           />
         </TouchableOpacity>
       )}
+
       <View
         style={[
           s.search,
           {
-            backgroundColor: inverse ? "rgba(255,255,255,0.96)" : c.input,
-            borderColor: inverse ? "rgba(255,255,255,0.45)" : c.border,
+            backgroundColor: "#FFFFFF",
+            borderColor: inverse
+              ? "rgba(255,255,255,0.55)"
+              : headerSolid
+                ? "#C4D6F2"
+                : c.border,
           },
           inverse ? s.searchShadowInverse : s.searchShadow,
         ]}
       >
-        <Icon
-          name="search-outline"
-          size={17}
-          color="#64748B"
-          style={s.leadingIcon}
-        />
         <TextInput
           accessibilityLabel="Search products"
-          placeholder="Search styles, brands…"
-          placeholderTextColor="#7C8594"
+          placeholder="Search for styles, brands…"
+          placeholderTextColor="#64748B"
           value={value}
           onChangeText={setText}
           onSubmitEditing={search}
           returnKeyType="search"
-          style={[s.input, { color: inverse ? "#0F172A" : c.foreground }]}
+          style={[s.input, { color: "#0F172A" }]}
         />
         {value.length > 0 && (
           <TouchableOpacity
@@ -129,53 +134,56 @@ export function StoreHeader({
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Submit search"
+          hitSlop={6}
           onPress={search}
-          style={[
-            s.submit,
-            { backgroundColor: back ? "transparent" : c.primary },
-          ]}
+          style={s.submit}
         >
-          <Icon
-            name={back ? "search-outline" : "arrow-forward"}
-            size={16}
-            color={back ? (inverse ? "#0F172A" : c.foreground) : "#FFFFFF"}
-          />
+          <Icon name="search-outline" size={20} color="#0F172A" />
         </TouchableOpacity>
       </View>
+
       {!back && (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Notifications"
           hitSlop={6}
-          style={iconPillStyle}
+          style={iconBtnStyle}
           onPress={() => router.push("/notifications")}
         >
-          <Icon name="notifications-outline" color={fg} size={21} />
+          <Icon name="notifications-outline" color={fg} size={22} />
         </TouchableOpacity>
       )}
+
       {back && (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={`Cart, ${cart.itemCount} items`}
           hitSlop={6}
           onPress={() => router.push("/(tabs)/cart")}
-          style={[iconPillStyle, { position: "relative" }]}
+          style={[iconBtnStyle, { position: "relative" }]}
         >
           <Icon name="cart-outline" color={fg} size={22} />
           {cart.itemCount > 0 && (
             <View style={[s.badge, { backgroundColor: c.accent }]}>
-              <Text style={{ fontSize: 9, color: "#fff", fontFamily: "GoogleSans_700Bold" }}>
+              <Text
+                style={{
+                  fontSize: 9,
+                  color: "#fff",
+                  fontFamily: "GoogleSans_700Bold",
+                }}
+              >
                 {cart.itemCount}
               </Text>
             </View>
           )}
         </TouchableOpacity>
       )}
+
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={productName ? "Share product" : "Wishlist"}
         hitSlop={6}
-        style={iconPillStyle}
+        style={iconBtnStyle}
         onPress={() =>
           productName
             ? void Share.share({ message: productName })
@@ -185,15 +193,16 @@ export function StoreHeader({
         <Icon
           name={productName ? "share-outline" : "heart-outline"}
           color={fg}
-          size={21}
+          size={22}
         />
       </TouchableOpacity>
+
       {back && onMore && (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="More product options"
           onPress={onMore}
-          style={iconPillStyle}
+          style={iconBtnStyle}
           hitSlop={6}
         >
           <Icon name="ellipsis-horizontal" color={fg} size={21} />
@@ -202,6 +211,7 @@ export function StoreHeader({
     </View>
   );
 }
+
 export function DepartmentTabs({
   tabs,
   active,
@@ -259,79 +269,76 @@ export function DepartmentTabs({
     </ScrollView>
   );
 }
+
 const s = StyleSheet.create({
   header: {
-    height: 58,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     gap: 8,
   },
   logoBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
     flexShrink: 0,
   },
   brandLogo: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     backgroundColor: "transparent",
   },
   plainActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
   },
-  inverseActionPill: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(15, 23, 42, 0.36)",
+  inverseActionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(15, 23, 42, 0.28)",
     alignItems: "center",
     justifyContent: "center",
   },
   search: {
     flex: 1,
     minWidth: 0,
-    height: 41,
+    height: 40,
     borderWidth: 1,
-    borderRadius: 21,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
   },
   searchShadow: {
     shadowColor: "#0F172A",
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    elevation: 2,
   },
   searchShadowInverse: {
     shadowColor: "#000000",
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.14,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     elevation: 3,
-  },
-  leadingIcon: {
-    marginLeft: 12,
-    marginRight: 6,
   },
   input: {
     flex: 1,
     minWidth: 0,
     flexBasis: 0,
-    paddingLeft: 2,
+    paddingLeft: 16,
     paddingRight: 4,
     fontSize: 13.5,
     fontFamily: "GoogleSans_400Regular",
-    height: 40,
+    height: 38,
     outlineWidth: 0,
   } as any,
   clearBtn: {
@@ -340,10 +347,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   submit: {
-    width: 31,
-    height: 31,
+    width: 36,
+    height: 36,
     flexShrink: 0,
-    borderRadius: 16,
     marginRight: 4,
     alignItems: "center",
     justifyContent: "center",

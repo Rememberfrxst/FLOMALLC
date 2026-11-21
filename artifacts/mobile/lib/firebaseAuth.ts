@@ -1,20 +1,12 @@
-import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import { getApp, getApps, initializeApp } from "firebase/app";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import firebaseConfig from "@/firebase-applet-config.json";
 import { getApiBaseUrl } from "@/services/api";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const firebaseAuth = getAuth(app);
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch {
+  // Ignore on platforms where web browser auth completion is a no-op
+}
 
 export interface GoogleSignInResult {
   idToken: string;
@@ -39,7 +31,7 @@ function decodeBase64Url(input: string): string {
   }
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  let bytes: number[] = [];
+  const bytes: number[] = [];
   for (let i = 0; i < padded.length; i += 4) {
     const a = chars.indexOf(padded[i]);
     const b = chars.indexOf(padded[i + 1]);
@@ -65,28 +57,49 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
+async function checkServerReachable(baseUrl: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3500);
+  try {
+    const res = await fetch(`${baseUrl}/healthz`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
-  if (Platform.OS === "web") {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    const cred = await signInWithPopup(firebaseAuth, provider);
-    const idToken = await cred.user.getIdToken();
-    const email = (cred.user.email || "").trim().toLowerCase();
-    if (!email) {
-      throw new Error("Google account did not provide an email address.");
-    }
-    return {
-      idToken,
-      uid: cred.user.uid,
-      email,
-      name: cred.user.displayName?.trim() || email.split("@")[0],
-      avatarUrl: cred.user.photoURL || undefined,
-    };
+  const baseUrl = getApiBaseUrl();
+  const serverOnline = await checkServerReachable(baseUrl);
+  if (!serverOnline) {
+    throw new Error(
+      "Google Sign-In needs the FLOMA server to be online. You can still sign in or create an account with Email & Password below.",
+    );
   }
 
-  const redirectUrl = Linking.createURL("auth-callback");
-  const bridgeUrl = `${getApiBaseUrl()}/auth/google-bridge?redirect=${encodeURIComponent(redirectUrl)}`;
-  const result = await WebBrowser.openAuthSessionAsync(bridgeUrl, redirectUrl);
+  let redirectUrl = "mobile://auth-callback";
+  try {
+    redirectUrl = Linking.createURL("auth-callback");
+  } catch {
+    // fallback to scheme deep link
+  }
+
+  const bridgeUrl = `${baseUrl}/auth/google-bridge?redirect=${encodeURIComponent(redirectUrl)}`;
+
+  let result: WebBrowser.WebBrowserAuthSessionResult;
+  try {
+    result = await WebBrowser.openAuthSessionAsync(bridgeUrl, redirectUrl);
+  } catch (err: any) {
+    throw new Error(
+      err?.message ||
+        "Could not open Google Sign-In browser. Please use Email & Password below.",
+    );
+  }
 
   if (result.type !== "success" || !result.url) {
     throw new Error("Google sign-in was cancelled.");
@@ -125,7 +138,5 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
 }
 
 export async function signOutFirebase(): Promise<void> {
-  if (Platform.OS === "web") {
-    await signOut(firebaseAuth);
-  }
+  // No native firebase web SDK session to clear on iOS/Android
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { TextInput } from '@/components/TextInput';
 import { Text } from '@/components/Text';
@@ -68,16 +68,12 @@ export default function RegisterScreen() {
     try {
       const success = await register(name.trim(), email.trim().toLowerCase(), phone.trim(), password);
       if (success) {
-        if (Platform.OS === 'web') {
-          router.replace('/');
-        } else {
-          Alert.alert('Account Created!', 'Welcome to FLOMA!', [{ text: 'Get Started', onPress: handleClose }]);
-        }
+        handleClose();
       } else {
         setErrorMsg('An account with this email already exists. Try signing in instead.');
       }
-    } catch {
-      setErrorMsg('Could not create your account right now. Please try again.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Could not create your account right now. Please try again.');
     } finally {
       setLoading(false);
     }

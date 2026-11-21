@@ -205,6 +205,10 @@ export function LoadState({
   );
 }
 export function openBanner(b: { linkType?: string; linkValue?: string }) {
+  if (b.linkType === "offers") {
+    router.push("/offers");
+    return;
+  }
   if (!b.linkValue) {
     router.push("/(tabs)/search");
     return;

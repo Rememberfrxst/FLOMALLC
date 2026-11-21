@@ -288,6 +288,18 @@ function createMockDb() {
     { name: "Minimalist Ceramic Flower Vase", slug: "demo-ceramic-flower-vase", category: "home-living", brand: "Atelier Home", price: 1299, compareAt: 1899, photo: "photo-1578500494198-246f612d3b3d" },
     { name: "Woven Linen Throw Blanket", slug: "demo-linen-throw-blanket", category: "home-living", brand: "Casa Form", price: 1899, compareAt: 2699, photo: "photo-1555041469-a586c61ea9bc", featured: true },
     { name: "Scented Soy Amber Candle", slug: "demo-amber-soy-candle", category: "home-living", brand: "Atelier Home", price: 749, compareAt: 1099, photo: "photo-1602874801007-bd458bb1b8b6" },
+    { name: "Quilted Winter Puffer Jacket", slug: "demo-winter-puffer-jacket", category: "men", brand: "Northline", price: 3299, compareAt: 4999, photo: "photo-1544923246-77307dd654cb", featured: true },
+    { name: "Cable-Knit Merino Winter Sweater", slug: "demo-merino-winter-sweater", category: "men", brand: "Aster", price: 1999, compareAt: 2999, photo: "photo-1620799140408-edc6dcb6d633" },
+    { name: "Festive Silk Blend Kurta Set", slug: "demo-festive-silk-kurta-set", category: "men", brand: "Zari & Co", price: 2799, compareAt: 4299, photo: "photo-1610030469983-98e550d6193c", featured: true },
+    { name: "Diwali Embroidered Festive Anarkali", slug: "demo-diwali-festive-anarkali", category: "women", brand: "Zari & Co", price: 3499, compareAt: 5499, photo: "photo-1583391733956-6c78276477e2", featured: true },
+    { name: "Cashmere Feel Winter Coat", slug: "demo-cashmere-winter-coat", category: "women", brand: "Indigo House", price: 3999, compareAt: 5899, photo: "photo-1539533018447-63fcce2678e3" },
+    { name: "Woolen Checkered Winter Muffler", slug: "demo-woolen-winter-muffler", category: "accessories", brand: "FLOMA Studio", price: 799, compareAt: 1299, photo: "photo-1520903920243-00d872a2d1c9" },
+    { name: "Embellished Festive Potli Clutch", slug: "demo-festive-potli-clutch", category: "accessories", brand: "Zari & Co", price: 1199, compareAt: 1899, photo: "photo-1566150905458-1bf1fc113f0d" },
+    { name: "Suede Fur-Lined Winter Boots", slug: "demo-suede-winter-boots", category: "footwear", brand: "Borough", price: 3599, compareAt: 5199, photo: "photo-1542840410-3092f99611a3" },
+    { name: "Diwali Golden Diya & Lantern Set", slug: "demo-diwali-lantern-set", category: "home-living", brand: "Casa Form", price: 1499, compareAt: 2299, photo: "photo-1513519245088-0e12902e5a38", featured: true },
+    { name: "Spiced Saffron Diwali Candle Duo", slug: "demo-diwali-candle-duo", category: "home-living", brand: "Atelier Home", price: 999, compareAt: 1499, photo: "photo-1603006905003-be475563bc59" },
+    { name: "Festive 24K Glow Illuminator", slug: "demo-festive-glow-illuminator", category: "beauty", brand: "Muse", price: 899, compareAt: 1399, photo: "photo-1596462502278-27bfdc403348" },
+    { name: "Shearling Collar Fleece Pullover", slug: "demo-shearling-fleece-pullover", category: "women", brand: "Mysa", price: 2199, compareAt: 3299, photo: "photo-1576566588028-4147f3842f27" },
   ];
 
   const baseTime = Date.now();
@@ -345,9 +357,18 @@ function createMockDb() {
   });
 
   const seededBanners: StoreRow[] = [
-    { id: "ban-1", title: "THE NEW SEASON EDIT", subtitle: "Fresh silhouettes, standout layers and everyday essentials.", imageUrl: image("photo-1445205170230-053b83016050", 1400), linkType: "category", linkValue: "women", sortOrder: 0, isActive: true, startsAt: null, endsAt: null },
-    { id: "ban-2", title: "TECH THAT MOVES WITH YOU", subtitle: "Phones and audio selected for work, play and everything between.", imageUrl: image("photo-1516321318423-f06f85e504b3", 1400), linkType: "category", linkValue: "smartphones", sortOrder: 1, isActive: true, startsAt: null, endsAt: null },
-    { id: "ban-3", title: "BEAUTY, EVERY DAY", subtitle: "Small rituals, polished finishes and new signature scents.", imageUrl: image("photo-1596462502278-27bfdc403348", 1400), linkType: "category", linkValue: "beauty", sortOrder: 2, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-1", title: "WINTER COLLECTION '26", subtitle: "Warm puffers, merino knits and layered outerwear built for crisp evenings.", imageUrl: image("photo-1483985988355-763728e1935b", 1400), linkType: "category", linkValue: "men", sortOrder: 0, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-2", title: "DIWALI FESTIVE EDIT", subtitle: "Radiate celebration with silk kurtas, festive drapes and curated gift sets.", imageUrl: image("photo-1610030469983-98e550d6193c", 1400), linkType: "category", linkValue: "women", sortOrder: 1, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-3", title: "THE NEW SEASON EDIT", subtitle: "Fresh silhouettes, standout layers and everyday essentials.", imageUrl: image("photo-1445205170230-053b83016050", 1400), linkType: "category", linkValue: "women", sortOrder: 2, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-4", title: "COZY HOODIES & SWEATERS", subtitle: "Heavyweight fleece, relaxed cardigans and cold-weather streetwear.", imageUrl: image("photo-1556821840-3a63f95609a7", 1400), linkType: "category", linkValue: "men", sortOrder: 3, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-5", title: "FESTIVE HOME & LIGHTS", subtitle: "Warm ambient lamps, soy amber candles and handwoven throws for Diwali.", imageUrl: image("photo-1513519245088-0e12902e5a38", 1400), linkType: "category", linkValue: "home-living", sortOrder: 4, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-6", title: "TECH THAT MOVES WITH YOU", subtitle: "Flagship phones and audio selected for work, travel and gifting.", imageUrl: image("photo-1516321318423-f06f85e504b3", 1400), linkType: "category", linkValue: "smartphones", sortOrder: 5, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-7", title: "MEGA SNEAKER & BOOT DROP", subtitle: "Street court sneakers, winter Chelsea boots and everyday runners.", imageUrl: image("photo-1542291026-7eec264c27ff", 1400), linkType: "category", linkValue: "footwear", sortOrder: 6, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-8", title: "FESTIVE BEAUTY & GLOW", subtitle: "Illuminating serums, velvet mattes and signature evening fragrances.", imageUrl: image("photo-1596462502278-27bfdc403348", 1400), linkType: "category", linkValue: "beauty", sortOrder: 7, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-9", title: "WATCHES & GIFTING BAGS", subtitle: "Minimal steel timepieces, leather totes and signature winter shades.", imageUrl: image("photo-1524592094714-0f0654e20314", 1400), linkType: "category", linkValue: "accessories", sortOrder: 8, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-10", title: "WIRELESS AUDIO FEST", subtitle: "Active noise-cancelling headphones & spatial earbuds at festive prices.", imageUrl: image("photo-1505740420928-5e560c06d30e", 1400), linkType: "category", linkValue: "audio", sortOrder: 9, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-11", title: "AUTUMN OUTERWEAR CLUB", subtitle: "Tailored trench coats, wool-blend blazers and crisp oxford shirts.", imageUrl: image("photo-1490481651871-ab68de25d43d", 1400), linkType: "category", linkValue: "men", sortOrder: 10, isActive: true, startsAt: null, endsAt: null },
+    { id: "ban-12", title: "FINAL CLEARANCE SALE", subtitle: "Up to 50% OFF bestsellers · Extra savings with code STYLE15.", imageUrl: image("photo-1607082348824-0a96f2a4b9da", 1400), linkType: "category", linkValue: "women", sortOrder: 11, isActive: true, startsAt: null, endsAt: null },
   ];
 
   const seededCoupons: StoreRow[] = [

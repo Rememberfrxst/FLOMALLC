@@ -16,6 +16,11 @@ import {
 } from "@/services/api";
 import { signInWithGoogleFirebase, signOutFirebase } from "@/lib/firebaseAuth";
 
+interface LocalAccountRecord {
+  user: User;
+  password: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -36,6 +41,43 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "@griper_user_cache";
+const LOCAL_ACCOUNTS_KEY = "@floma_local_accounts_v1";
+
+function isOfflineOrUnavailableError(err: unknown): boolean {
+  const msg =
+    err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  return (
+    msg.includes("network") ||
+    msg.includes("fetch") ||
+    msg.includes("abort") ||
+    msg.includes("timeout") ||
+    msg.includes("non-json") ||
+    msg.includes("api error 404") ||
+    msg.includes("api error 502") ||
+    msg.includes("api error 503") ||
+    msg.includes("api error 504")
+  );
+}
+
+async function readLocalAccounts(): Promise<Record<string, LocalAccountRecord>> {
+  try {
+    const raw = await AsyncStorage.getItem(LOCAL_ACCOUNTS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, LocalAccountRecord>;
+  } catch {
+    return {};
+  }
+}
+
+async function saveLocalAccount(email: string, record: LocalAccountRecord) {
+  try {
+    const map = await readLocalAccounts();
+    map[email.toLowerCase()] = record;
+    await AsyncStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(map));
+  } catch {
+    // Non-fatal storage issue
+  }
+}
 
 function mapApiUser(apiUser: ApiUser, addresses: any[] = []): User {
   return {
@@ -69,14 +111,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let addresses: any[] = [];
       try {
         addresses = await api.addresses.list();
-      } catch (e) {
-        console.log("Failed to fetch addresses", e);
+      } catch {
+        // ignore address fetch errors
       }
       const mappedUser = mapApiUser(apiUser, addresses);
       setUser(mappedUser);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
-    } catch (e) {
-      console.log("Failed to refresh user", e);
+    } catch {
+      // Keep cached user when offline
     }
   }, []);
 
@@ -90,8 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (token) {
           await refreshUser();
         }
-      } catch (e) {
-        console.log("Load auth error", e);
+      } catch {
+        // Ignore initial cache read issues
       } finally {
         setIsLoading(false);
       }
@@ -101,15 +143,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string): Promise<boolean> => {
-      if (!email) return false;
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail || !password) return false;
       try {
-        const res = await api.auth.login(email, password);
+        const res = await api.auth.login(normalizedEmail, password);
         await saveTokens(res.accessToken, res.refreshToken);
+        const mappedUser = mapApiUser(res.user);
+        setUser(mappedUser);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
+        await saveLocalAccount(normalizedEmail, { user: mappedUser, password });
         await refreshUser();
         return true;
       } catch (e) {
-        console.log("Login error", e);
-        return false;
+        if (!isOfflineOrUnavailableError(e)) {
+          throw e;
+        }
+        const accounts = await readLocalAccounts();
+        const existing = accounts[normalizedEmail];
+        if (existing) {
+          if (existing.password !== password) {
+            throw new Error("Incorrect password. Please try again.");
+          }
+          setUser(existing.user);
+          await AsyncStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(existing.user),
+          );
+          return true;
+        }
+        throw new Error(
+          "No account found for this email yet. Tap 'Create New Account' to sign up.",
+        );
       }
     },
     [refreshUser],
@@ -131,7 +195,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await refreshUser();
       return true;
     } catch {
-      // Fallback cleanly to verified Google Firebase profile if API is offline
       if (!googleCreds.email) return false;
       const localUser: User = {
         id: googleCreds.uid,
@@ -155,15 +218,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       phone: string,
       password: string,
     ): Promise<boolean> => {
-      if (!name || !email) return false;
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!name.trim() || !normalizedEmail) return false;
       try {
-        const res = await api.auth.register(name, email, phone, password);
+        const res = await api.auth.register(
+          name.trim(),
+          normalizedEmail,
+          phone.trim(),
+          password,
+        );
         await saveTokens(res.accessToken, res.refreshToken);
+        const mappedUser = mapApiUser(res.user);
+        setUser(mappedUser);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
+        await saveLocalAccount(normalizedEmail, { user: mappedUser, password });
         await refreshUser();
         return true;
       } catch (e) {
-        console.log("Register error", e);
-        return false;
+        if (!isOfflineOrUnavailableError(e)) {
+          throw e;
+        }
+        const accounts = await readLocalAccounts();
+        if (accounts[normalizedEmail]) {
+          throw new Error(
+            "An account with this email already exists. Try signing in instead.",
+          );
+        }
+        const localUser: User = {
+          id: `local-${Date.now()}`,
+          name: name.trim(),
+          email: normalizedEmail,
+          phone: phone.trim(),
+          addresses: [],
+          role: "user",
+        };
+        await saveLocalAccount(normalizedEmail, { user: localUser, password });
+        setUser(localUser);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(localUser));
+        return true;
       }
     },
     [refreshUser],
@@ -173,22 +265,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (name: string, phone: string) => {
       const token = await getAccessToken();
       if (token) {
-        await api.auth.updateProfile({ name, phone });
-        await refreshUser();
-        return;
+        try {
+          await api.auth.updateProfile({ name, phone });
+          await refreshUser();
+          return;
+        } catch (e) {
+          if (!isOfflineOrUnavailableError(e)) throw e;
+        }
       }
       if (user) {
         const updated = { ...user, name, phone };
         setUser(updated);
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        const accounts = await readLocalAccounts();
+        const key = user.email.toLowerCase();
+        if (accounts[key]) {
+          accounts[key].user = updated;
+          await AsyncStorage.setItem(
+            LOCAL_ACCOUNTS_KEY,
+            JSON.stringify(accounts),
+          );
+        }
       }
     },
     [refreshUser, user],
   );
+
   const logout = useCallback(async () => {
     try {
       await api.auth.logout();
-    } catch (e) {
+    } catch {
       // Ignore errors on logout
     }
     await signOutFirebase().catch(() => {});
@@ -201,9 +307,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (address: Omit<Address, "id">) => {
       const token = await getAccessToken();
       if (token) {
-        await api.addresses.add(address);
-        await refreshUser();
-        return;
+        try {
+          await api.addresses.add(address);
+          await refreshUser();
+          return;
+        } catch (e) {
+          if (!isOfflineOrUnavailableError(e)) throw e;
+        }
       }
       if (user) {
         const next: Address = {
@@ -231,9 +341,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (id: string) => {
       const token = await getAccessToken();
       if (token) {
-        await api.addresses.setDefault(id);
-        await refreshUser();
-        return;
+        try {
+          await api.addresses.setDefault(id);
+          await refreshUser();
+          return;
+        } catch (e) {
+          if (!isOfflineOrUnavailableError(e)) throw e;
+        }
       }
       if (user) {
         const updated = {

@@ -97,7 +97,7 @@ export default function CampaignCarousel({
               <View style={s.desktopOverlayWrap}>
                 <View style={s.desktopCard}>
                   <Text style={s.desktopBrandTag}>
-                    FLOMA CURATED · EDIT 0{idx + 1}
+                    FLOMA CURATED · EDIT {String(idx + 1).padStart(2, "0")}
                   </Text>
                   {!!b.title && (
                     <Text numberOfLines={2} style={s.desktopTitle}>
@@ -198,21 +198,29 @@ export default function CampaignCarousel({
       )}
 
       {banners.length > 1 && (
-        <View style={desktop ? s.desktopDots : s.dots}>
-          {banners.map((b, i) => (
-            <TouchableOpacity
-              key={b.id}
-              onPress={() => goTo(i)}
-              accessibilityLabel={`Slide ${i + 1}`}
-              style={{
-                height: desktop ? 3 : 4,
-                width: desktop ? (i === current ? 28 : 16) : i === current ? 12 : 4,
-                borderRadius: desktop ? 1.5 : 3,
-                backgroundColor:
-                  i === current ? "#FFFFFF" : "rgba(255,255,255,0.48)",
-              }}
-            />
-          ))}
+        <View style={desktop ? s.desktopDots : s.dotsWrap}>
+          <View style={desktop ? s.desktopDotsRow : s.dotsPill}>
+            {banners.map((b, i) => (
+              <TouchableOpacity
+                key={b.id}
+                onPress={() => goTo(i)}
+                accessibilityLabel={`Slide ${i + 1}`}
+                style={{
+                  height: desktop ? 3 : 4,
+                  width: desktop
+                    ? i === current
+                      ? 24
+                      : 12
+                    : i === current
+                      ? 12
+                      : 4,
+                  borderRadius: desktop ? 1.5 : 3,
+                  backgroundColor:
+                    i === current ? "#FFFFFF" : "rgba(255,255,255,0.48)",
+                }}
+              />
+            ))}
+          </View>
         </View>
       )}
     </View>
@@ -251,14 +259,22 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 12,
   },
-  dots: {
+  dotsWrap: {
     position: "absolute",
-    bottom: 11,
+    bottom: 10,
     left: 0,
     right: 0,
+    alignItems: "center",
+  },
+  dotsPill: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
     gap: 5,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   desktopOverlayWrap: {
     flex: 1,
@@ -360,9 +376,12 @@ const s = StyleSheet.create({
     bottom: 18,
     left: 0,
     right: 0,
+    alignItems: "center",
+  },
+  desktopDotsRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    gap: 7,
   },
 });

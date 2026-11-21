@@ -46,8 +46,8 @@ export default function LoginScreen() {
       } else {
         setErrorMsg('Invalid email or password. Try again or create a new FLOMA account below.');
       }
-    } catch {
-      setErrorMsg('Unable to sign in right now. Please check your connection and try again.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unable to sign in right now. Please try again.');
     } finally {
       setLoading(false);
     }
