@@ -97,7 +97,7 @@ export default function Me() {
                 />
               ) : (
                 <Text style={{ fontSize: 36, color: "#fff", fontFamily: "GoogleSans_700Bold" }}>
-                  {user ? user.name[0].toUpperCase() : "F"}
+                  {(user?.name?.trim()?.[0] || "F").toUpperCase()}
                 </Text>
               )}
             </View>
@@ -233,7 +233,7 @@ export default function Me() {
             />
           ) : (
             <Text style={{ fontSize: 38, color: "#fff" }}>
-              {user ? user.name[0].toUpperCase() : "F"}
+              {(user?.name?.trim()?.[0] || "F").toUpperCase()}
             </Text>
           )}
         </View>

@@ -58,18 +58,22 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 }
 
 async function checkServerReachable(baseUrl: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3500);
+  const controller =
+    typeof AbortController !== "undefined" ? new AbortController() : undefined;
+  const timer = controller
+    ? setTimeout(() => controller.abort(), 3500)
+    : undefined;
   try {
     const res = await fetch(`${baseUrl}/healthz`, {
       method: "GET",
-      signal: controller.signal,
+      ...(controller ? { signal: controller.signal } : {}),
     });
-    return res.ok;
+    const ct = res.headers.get("content-type") || "";
+    return res.ok && ct.includes("application/json");
   } catch {
     return false;
   } finally {
-    clearTimeout(timer);
+    if (timer) clearTimeout(timer);
   }
 }
 

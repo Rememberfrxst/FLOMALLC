@@ -17,17 +17,19 @@
 import { Text, TextInput } from 'react-native';
 
 export function applyGlobalTypographyFix() {
-  // ── Text ──────────────────────────────────────────────────────────────────
-  if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
-  // Merge with any existing defaultProps style so we don't clobber them.
-  const existingTextStyle = ((Text as any).defaultProps.style as object) ?? {};
-  (Text as any).defaultProps.style = { includeFontPadding: false, ...existingTextStyle };
-  // Disable system font-scaling globally; use our own size tokens instead.
-  (Text as any).defaultProps.allowFontScaling = false;
+  try {
+    // ── Text ──────────────────────────────────────────────────────────────────
+    if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
+    const existingTextStyle = ((Text as any).defaultProps.style as object) ?? {};
+    (Text as any).defaultProps.style = { includeFontPadding: false, ...existingTextStyle };
+    (Text as any).defaultProps.allowFontScaling = false;
 
-  // ── TextInput ─────────────────────────────────────────────────────────────
-  if (!(TextInput as any).defaultProps) (TextInput as any).defaultProps = {};
-  const existingInputStyle = ((TextInput as any).defaultProps.style as object) ?? {};
-  (TextInput as any).defaultProps.style = { includeFontPadding: false, ...existingInputStyle };
-  (TextInput as any).defaultProps.allowFontScaling = false;
+    // ── TextInput ─────────────────────────────────────────────────────────────
+    if (!(TextInput as any).defaultProps) (TextInput as any).defaultProps = {};
+    const existingInputStyle = ((TextInput as any).defaultProps.style as object) ?? {};
+    (TextInput as any).defaultProps.style = { includeFontPadding: false, ...existingInputStyle };
+    (TextInput as any).defaultProps.allowFontScaling = false;
+  } catch {
+    // Safe fallback: custom Text and TextInput wrappers already apply includeFontPadding: false
+  }
 }

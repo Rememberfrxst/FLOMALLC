@@ -43,63 +43,63 @@ const ICONS: Record<string, Renderer> = {
   'close':  (c) => sp(c, 'M18 6L6 18M6 6l12 12'),
 
   'add-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M12 8v8M8 12h8" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" />
-    </>
+    </G>
   ),
   'add-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M12 8v8M8 12h8')}
-    </>
+    </G>
   ),
   'close-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M15 9l-6 6M9 9l6 6" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" />
-    </>
+    </G>
   ),
   'close-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M15 9l-6 6M9 9l6 6')}
-    </>
+    </G>
   ),
   'ellipsis-vertical': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={5}  r={1.5} fill={c} />
       <Circle cx={12} cy={12} r={1.5} fill={c} />
       <Circle cx={12} cy={19} r={1.5} fill={c} />
-    </>
+    </G>
   ),
   'share-outline': (c) => sp(c, 'M4 12v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8M16 6l-4-4-4 4M12 2v13'),
 
   /* ── Check marks ── */
   'checkmark': (c) => sp(c, 'M5 13l4 4L19 7', 2),
   'checkmark-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M7.5 12l3 3 6-6" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-    </>
+    </G>
   ),
   'checkmark-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M7.5 12l3 3 6-6', 1.8)}
-    </>
+    </G>
   ),
   'checkmark-done-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M5 12l3 3 5-5M9 12l3 3 5-5" fill="none" stroke="#fff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-    </>
+    </G>
   ),
   'checkmark-done-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M5 12l3 3 5-5M9 12l3 3 5-5', 1.6)}
-    </>
+    </G>
   ),
 
   /* ── Stars / Rating ── */
@@ -119,7 +119,7 @@ const ICONS: Record<string, Renderer> = {
     />
   ),
   'star-half': (c) => (
-    <>
+    <G>
       {/* filled left half */}
       <Defs>
         <ClipPath id="lhalf">
@@ -138,7 +138,7 @@ const ICONS: Record<string, Renderer> = {
         strokeWidth={1.8}
         strokeLinejoin="round"
       />
-    </>
+    </G>
   ),
 
   /* ── Heart ── */
@@ -164,16 +164,16 @@ const ICONS: Record<string, Renderer> = {
   /* ── Person / User ── */
   'person-outline': (c) => sp(c, 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'),
   'person-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-6.5 8a6.5 6.5 0 0 1 13 0')}
-    </>
+    </G>
   ),
   'person-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-6.5 8a6.5 6.5 0 0 1 13 0" fill="none" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" />
-    </>
+    </G>
   ),
 
   /* ── Location / Map ── */
@@ -186,19 +186,19 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Mail ── */
   'mail-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z')}
       {sp(c, 'M22 6l-10 7L2 6')}
-    </>
+    </G>
   ),
 
   /* ── Lock ── */
   'lock-closed-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z')}
       {sp(c, 'M7 11V7a5 5 0 0 1 10 0v4')}
       <Circle cx={12} cy={16} r={1} fill={c} />
-    </>
+    </G>
   ),
 
   /* ── Mic ── */
@@ -228,99 +228,99 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Information & Alerts ── */
   'alert-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       <Path d="M12 8v5M12 16h.01" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" />
-    </>
+    </G>
   ),
   'information-circle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       <Path d="M12 16v-4M12 8h.01" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" />
-    </>
+    </G>
   ),
   'information-circle': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M12 16v-4M12 8h.01" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" />
-    </>
+    </G>
   ),
 
   /* ── Bag / Cart ── */
   'bag': (c) => fp(c, 'M6 2a1 1 0 0 0 0 2h1.22l2.27 9.22A3 3 0 0 0 10 19h9a1 1 0 0 0 0-2h-9a1 1 0 0 1-.97-.76L8.73 15H18a2 2 0 0 0 1.94-1.5l1.5-6A2 2 0 0 0 19.5 5H7.28L6.8 3H6zm4.5 17.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0zm6.5 0a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0z'),
   'bag-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M6 2H4M6 2l2.27 9.22A3 3 0 0 0 11 15h8a2 2 0 0 0 1.94-1.5l1.5-6A2 2 0 0 0 20.5 5H7.28')}
       <Circle cx={11} cy={20} r={1} fill={c} />
       <Circle cx={17} cy={20} r={1} fill={c} />
-    </>
+    </G>
   ),
   'bag-handle': (c) => (
-    <>
+    <G>
       {sp(c, 'M6 2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4', 0)}
       {sp(c, 'M3 7h18l-2 11H5L3 7z')}
       {sp(c, 'M9 7a3 3 0 0 1 6 0')}
-    </>
+    </G>
   ),
   'bag-add': (c) => (
-    <>
+    <G>
       {sp(c, 'M6 2H4M6 2l2 9')}
       {sp(c, 'M8 11h10l-1.5 7H9.5L8 11z')}
       <Path d="M15 5v6M12 8h6" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" />
-    </>
+    </G>
   ),
 
   /* ── Receipt ── */
   'receipt': (c) => fp(c, 'M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1-2-1V2zm4 6h8M8 10h8M8 14h5'),
   'receipt-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1-2-1V2z')}
       {sp(c, 'M8 8h8M8 12h8M8 16h5')}
-    </>
+    </G>
   ),
 
   /* ── Trash ── */
   'trash-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M3 6h18M19 6l-1 14H6L5 6M10 6V4h4v2')}
       {sp(c, 'M10 11v6M14 11v6')}
-    </>
+    </G>
   ),
 
   /* ── Card / Credit ── */
   'card': (c) => (
-    <>
+    <G>
       <Rect x={2} y={5} width={20} height={14} rx={2} fill={c} />
       <Rect x={2} y={9} width={20} height={3} fill="rgba(0,0,0,0.25)" />
-    </>
+    </G>
   ),
   'card-outline': (c) => (
-    <>
+    <G>
       <Rect x={2} y={5} width={20} height={14} rx={2} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M2 10h20')}
-    </>
+    </G>
   ),
 
   /* ── Shield ── */
   'shield-checkmark': (c) => (
-    <>
+    <G>
       <Path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z" fill={c} />
       <Path d="M9 12l2 2 4-4" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    </>
+    </G>
   ),
 
   /* ── Cash ── */
   'cash-outline': (c) => (
-    <>
+    <G>
       <Rect x={2} y={6} width={20} height={12} rx={2} fill="none" stroke={c} strokeWidth={1.8} />
       <Circle cx={12} cy={12} r={3} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M6 6v12M18 6v12')}
-    </>
+    </G>
   ),
 
   /* ── QR Code ── */
   'qr-code-outline': (c) => (
-    <>
+    <G>
       <Rect x={3}  y={3}  width={7} height={7} rx={1} fill="none" stroke={c} strokeWidth={1.8} />
       <Rect x={14} y={3}  width={7} height={7} rx={1} fill="none" stroke={c} strokeWidth={1.8} />
       <Rect x={3}  y={14} width={7} height={7} rx={1} fill="none" stroke={c} strokeWidth={1.8} />
@@ -328,7 +328,7 @@ const ICONS: Record<string, Renderer> = {
       <Rect x={16} y={5}  width={3} height={3} fill={c} />
       <Rect x={5}  y={16} width={3} height={3} fill={c} />
       {sp(c, 'M14 14h3v3M17 14v7M14 17h7')}
-    </>
+    </G>
   ),
 
   /* ── Log out ── */
@@ -336,43 +336,43 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Language / Globe ── */
   'language-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z')}
-    </>
+    </G>
   ),
 
   /* ── Storefront ── */
   'storefront': (c) => fp(c, 'M20 4H4v2l-1 5a3 3 0 0 0 2 3v8h2v-4h10v4h2v-8a3 3 0 0 0 2-3L20 6V4zM9 16H7v-2h2v2zm8 0h-2v-2h2v2zM5.18 9l.82-3h12l.82 3H5.18z'),
   'storefront-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M3 9l1-5h16l1 5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z')}
       {sp(c, 'M5 9v12h14V9')}
       {sp(c, 'M9 21v-4h6v4')}
-    </>
+    </G>
   ),
 
   /* ── Cube / Box ── */
   'cube': (c) => fp(c, 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'),
   'cube-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z')}
       {sp(c, 'M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12')}
-    </>
+    </G>
   ),
 
   /* ── Time / Clock ── */
   'time': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill={c} />
       <Path d="M12 6v6l4 2" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" />
-    </>
+    </G>
   ),
   'time-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M12 6v6l4 2')}
-    </>
+    </G>
   ),
 
   /* ── Flash / Lightning ── */
@@ -380,10 +380,10 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Sunny / Sun ── */
   'sunny': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={5} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42')}
-    </>
+    </G>
   ),
 
   /* ── Moon ── */
@@ -391,10 +391,10 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Phone portrait ── */
   'phone-portrait-outline': (c) => (
-    <>
+    <G>
       <Rect x={7} y={2} width={10} height={20} rx={2} fill="none" stroke={c} strokeWidth={1.8} />
       <Circle cx={12} cy={18} r={0.5} fill={c} stroke={c} strokeWidth={1} />
-    </>
+    </G>
   ),
 
   /* ── Shirt / Clothing ── */
@@ -405,10 +405,10 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Food / Fast food ── */
   'fast-food-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z')}
       {sp(c, 'M6 1v3M10 1v3M14 1v3')}
-    </>
+    </G>
   ),
 
   /* ── Sparkles ── */
@@ -416,18 +416,18 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Football / Sports ── */
   'football-outline': (c) => (
-    <>
+    <G>
       <Circle cx={12} cy={12} r={10} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83')}
-    </>
+    </G>
   ),
 
   /* ── Book ── */
   'book-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20')}
       {sp(c, 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z')}
-    </>
+    </G>
   ),
 
   /* ── Call / Phone ── */
@@ -435,10 +435,10 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Headset ── */
   'headset': (c) => (
-    <>
+    <G>
       {sp(c, 'M3 18v-6a9 9 0 0 1 18 0v6')}
       {sp(c, 'M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z')}
-    </>
+    </G>
   ),
 
   /* ── Trending up ── */
@@ -446,28 +446,28 @@ const ICONS: Record<string, Renderer> = {
 
   /* ── Pricetag ── */
   'pricetag-outline': (c) => (
-    <>
+    <G>
       {sp(c, 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z')}
       <Circle cx={7} cy={7} r={1.5} fill={c} />
-    </>
+    </G>
   ),
 
   /* ── Bicycle ── */
   'bicycle': (c) => (
-    <>
+    <G>
       <Circle cx={6}  cy={15} r={4} fill="none" stroke={c} strokeWidth={1.8} />
       <Circle cx={18} cy={15} r={4} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M6 15l3-6h5l2 3M14 9l2 6M10 9H7')}
       {sp(c, 'M10 9l3.5 2')}
-    </>
+    </G>
   ),
   'bicycle-outline': (c) => (
-    <>
+    <G>
       <Circle cx={6}  cy={15} r={4} fill="none" stroke={c} strokeWidth={1.8} />
       <Circle cx={18} cy={15} r={4} fill="none" stroke={c} strokeWidth={1.8} />
       {sp(c, 'M6 15l3-6h5l2 3M14 9l2 6M10 9H7')}
       {sp(c, 'M10 9l3.5 2')}
-    </>
+    </G>
   ),
 
   /* ── Home (also used by CategoryCard) ── */

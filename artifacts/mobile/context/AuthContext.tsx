@@ -52,7 +52,11 @@ function isOfflineOrUnavailableError(err: unknown): boolean {
     msg.includes("abort") ||
     msg.includes("timeout") ||
     msg.includes("non-json") ||
+    msg.includes("api error 401") ||
+    msg.includes("api error 403") ||
     msg.includes("api error 404") ||
+    msg.includes("api error 405") ||
+    msg.includes("api error 500") ||
     msg.includes("api error 502") ||
     msg.includes("api error 503") ||
     msg.includes("api error 504")

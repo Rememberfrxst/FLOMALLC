@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { TextInput } from '@/components/TextInput';
@@ -6,6 +6,7 @@ import { Text } from '@/components/Text';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SvgIcon from '@/components/SvgIcon';
+import { Icon } from '@/components/StoreIcon';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useDesktopWeb } from '@/hooks/useDesktopWeb';
@@ -18,6 +19,7 @@ export default function RegisterScreen() {
   const desktop = useDesktopWeb();
   const { register, loginWithGoogle } = useAuth();
   const isWeb = Platform.OS === 'web';
+  const mountedRef = useRef(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -27,9 +29,20 @@ export default function RegisterScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const handleClose = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
+    try {
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
+    } catch {
+      router.replace('/');
+    }
   };
 
   const handleGoogleSignUp = async () => {
@@ -37,20 +50,22 @@ export default function RegisterScreen() {
     setGoogleLoading(true);
     try {
       const success = await loginWithGoogle();
+      if (!mountedRef.current) return;
       if (success) {
         handleClose();
       } else {
         setErrorMsg('Google sign-up could not be completed. Please try again.');
       }
     } catch (err: any) {
-      const msg = err?.message || '';
+      if (!mountedRef.current) return;
+      const msg = String(err?.message || '');
       if (msg.includes('popup-closed-by-user') || msg.includes('cancelled')) {
         setErrorMsg('Google sign-up was cancelled.');
       } else {
         setErrorMsg(msg || 'Could not connect to Google right now.');
       }
     } finally {
-      setGoogleLoading(false);
+      if (mountedRef.current) setGoogleLoading(false);
     }
   };
 
@@ -67,15 +82,17 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const success = await register(name.trim(), email.trim().toLowerCase(), phone.trim(), password);
+      if (!mountedRef.current) return;
       if (success) {
         handleClose();
       } else {
         setErrorMsg('An account with this email already exists. Try signing in instead.');
       }
     } catch (err: any) {
+      if (!mountedRef.current) return;
       setErrorMsg(err?.message || 'Could not create your account right now. Please try again.');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -90,7 +107,7 @@ export default function RegisterScreen() {
       ) : (
         <View style={{ paddingTop: isWeb ? 24 : insets.top + 10, paddingHorizontal: 20 }}>
           <TouchableOpacity style={[styles.closeBtn, { backgroundColor: colors.muted }]} onPress={handleClose}>
-            <SvgIcon name="close" size={22} color={colors.foreground} />
+            <Icon name="close" size={22} color={colors.foreground} />
           </TouchableOpacity>
         </View>
       )}
@@ -122,7 +139,7 @@ export default function RegisterScreen() {
 
         {!!errorMsg && (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '12', borderColor: colors.destructive }]}>
-            <SvgIcon name="alert-circle-outline" size={18} color={colors.destructive} />
+            <Icon name="alert-circle-outline" size={18} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive }]}>{errorMsg}</Text>
           </View>
         )}
@@ -155,14 +172,14 @@ export default function RegisterScreen() {
           </View>
 
           {[
-            { label: 'Full Name', value: name, setter: setName, placeholder: 'Your full name', icon: 'person-outline', type: 'default', cap: 'words' as const },
-            { label: 'Email', value: email, setter: setEmail, placeholder: 'you@example.com', icon: 'mail-outline', type: 'email-address', cap: 'none' as const },
-            { label: 'Phone', value: phone, setter: setPhone, placeholder: '+91 99999 99999', icon: 'call-outline', type: 'phone-pad', cap: 'none' as const },
+            { label: 'Full Name', value: name, setter: setName, placeholder: 'Your full name', icon: 'person-outline' as const, type: 'default', cap: 'words' as const },
+            { label: 'Email', value: email, setter: setEmail, placeholder: 'you@example.com', icon: 'mail-outline' as const, type: 'email-address', cap: 'none' as const },
+            { label: 'Phone', value: phone, setter: setPhone, placeholder: '+91 99999 99999', icon: 'call-outline' as const, type: 'phone-pad', cap: 'none' as const },
           ].map(field => (
             <View key={field.label} style={styles.field}>
               <Text style={[styles.label, { color: colors.foreground }]}>{field.label}</Text>
               <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.border, borderRadius: desktop ? 2 : 12 }]}>
-                <SvgIcon name={field.icon as any} size={18} color={colors.mutedForeground} />
+                <Icon name={field.icon} size={18} color={colors.mutedForeground} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground, fontFamily: 'GoogleSans_400Regular' }]}
                   placeholder={field.placeholder}
@@ -183,7 +200,7 @@ export default function RegisterScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
             <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.border, borderRadius: desktop ? 2 : 12 }]}>
-              <SvgIcon name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+              <Icon name="lock-closed-outline" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.foreground, fontFamily: 'GoogleSans_400Regular' }]}
                 placeholder="Min. 6 characters"
@@ -197,8 +214,8 @@ export default function RegisterScreen() {
                 onSubmitEditing={handleRegister}
                 returnKeyType="done"
               />
-              <TouchableOpacity onPress={() => setShowPw(s => !s)}>
-                <SvgIcon name={showPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.mutedForeground} />
+              <TouchableOpacity onPress={() => setShowPw(s => !s)} hitSlop={8}>
+                <Icon name={showPw ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
           </View>
@@ -263,7 +280,7 @@ const styles = StyleSheet.create({
   field: { gap: 6 },
   label: { fontSize: 14, fontFamily: 'GoogleSans_500Medium' },
   inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 14, height: 50, borderWidth: 1 },
-  input: { flex: 1, fontSize: 15, height: '100%' },
+  input: { flex: 1, fontSize: 15, height: 48, paddingVertical: 0 },
   registerBtn: { paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 4 },
   registerBtnText: { fontSize: 15, letterSpacing: 0.8, fontFamily: 'GoogleSans_700Bold' },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },

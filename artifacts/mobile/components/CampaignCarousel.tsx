@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Platform,
   View,
   ScrollView,
   TouchableOpacity,
@@ -95,7 +96,21 @@ export default function CampaignCarousel({
             />
             {desktop ? (
               <View style={s.desktopOverlayWrap}>
-                <View style={s.desktopCard}>
+                <View
+                  style={[
+                    s.desktopCard,
+                    Platform.OS === "web"
+                      ? ({
+                          backgroundImage:
+                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
+                          backdropFilter: "blur(26px) saturate(185%)",
+                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                          boxShadow:
+                            "0 20px 48px rgba(0, 0, 0, 0.30), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                        } as any)
+                      : null,
+                  ]}
+                >
                   <Text style={s.desktopBrandTag}>
                     FLOMA CURATED · EDIT {String(idx + 1).padStart(2, "0")}
                   </Text>
@@ -286,28 +301,31 @@ const s = StyleSheet.create({
     paddingHorizontal: 72,
   },
   desktopCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.94)",
+    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.50)",
     paddingVertical: 28,
     paddingHorizontal: 32,
     width: 390,
     maxWidth: "90%",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
   },
   desktopBrandTag: {
     fontSize: 10.5,
     letterSpacing: 1.8,
-    color: "#866528",
+    color: "#FDE68A",
     fontFamily: "GoogleSans_700Bold",
     marginBottom: 8,
   },
   desktopTitle: {
     fontSize: 24,
     lineHeight: 30,
-    color: "#2C4152",
+    color: "#FFFFFF",
     textAlign: "center",
     fontFamily: "GoogleSans_700Bold",
     letterSpacing: 0.5,
@@ -315,32 +333,33 @@ const s = StyleSheet.create({
   desktopDivider: {
     width: 48,
     height: 1.5,
-    backgroundColor: "#C8A97E",
+    backgroundColor: "rgba(253, 230, 138, 0.72)",
     marginVertical: 12,
   },
   desktopSubtitle: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#525D67",
+    color: "rgba(255, 255, 255, 0.90)",
     textAlign: "center",
     marginBottom: 12,
   },
   desktopOfferLine: {
     fontSize: 19,
-    color: "#151515",
+    color: "#FFFFFF",
     fontFamily: "GoogleSans_700Bold",
     letterSpacing: 0.6,
     marginBottom: 16,
   },
   desktopCta: {
     borderWidth: 1,
-    borderColor: "#2C4152",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(255, 255, 255, 0.62)",
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.20)",
   },
   desktopCtaText: {
-    color: "#2C4152",
+    color: "#FFFFFF",
     fontSize: 11.5,
     letterSpacing: 1.1,
     fontFamily: "GoogleSans_700Bold",

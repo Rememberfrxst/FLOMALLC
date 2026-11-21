@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import {
+  Platform,
   View,
   ScrollView,
   TouchableOpacity,
@@ -88,6 +89,7 @@ export default function Home() {
   const [more, setMore] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [query, setQuery] = useState("");
+  const [headerSolid, setHeaderSolid] = useState(false);
 
   const params = {
     category: active,
@@ -317,17 +319,31 @@ export default function Home() {
                   end={{ x: 1, y: 0.5 }}
                   style={StyleSheet.absoluteFill}
                 />
-                <View style={s.ajioSplitCard}>
-                  <Text style={[s.ajioSplitBrand, { color: c.gold }]}>
+                <View
+                  style={[
+                    s.ajioSplitCard,
+                    Platform.OS === "web"
+                      ? ({
+                          backgroundImage:
+                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
+                          backdropFilter: "blur(26px) saturate(185%)",
+                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                          boxShadow:
+                            "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                        } as any)
+                      : null,
+                  ]}
+                >
+                  <Text style={[s.ajioSplitBrand, { color: "#FDE68A" }]}>
                     FLOMA CURATED
                   </Text>
-                  <Text numberOfLines={2} style={[s.ajioSplitTitle, { color: c.navy }]}>
+                  <Text numberOfLines={2} style={[s.ajioSplitTitle, { color: "#FFFFFF" }]}>
                     {spotlightBanner.title || "THE NEW SEASON EDIT"}
                   </Text>
                   <View style={s.ajioSplitDivider} />
                   <Text style={s.ajioSplitOffer}>MIN. 40% OFF*</Text>
-                  <View style={[s.ajioSplitBtn, { borderColor: c.navy }]}>
-                    <Text style={[s.ajioSplitBtnText, { color: c.navy }]}>
+                  <View style={s.ajioSplitBtn}>
+                    <Text style={s.ajioSplitBtnText}>
                       SHOP NOW ›
                     </Text>
                   </View>
@@ -356,17 +372,31 @@ export default function Home() {
                   end={{ x: 1, y: 0.5 }}
                   style={StyleSheet.absoluteFill}
                 />
-                <View style={s.ajioSplitCard}>
-                  <Text style={[s.ajioSplitBrand, { color: c.gold }]}>
+                <View
+                  style={[
+                    s.ajioSplitCard,
+                    Platform.OS === "web"
+                      ? ({
+                          backgroundImage:
+                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
+                          backdropFilter: "blur(26px) saturate(185%)",
+                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                          boxShadow:
+                            "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                        } as any)
+                      : null,
+                  ]}
+                >
+                  <Text style={[s.ajioSplitBrand, { color: "#FDE68A" }]}>
                     SEASON EDIT
                   </Text>
-                  <Text numberOfLines={2} style={[s.ajioSplitTitle, { color: c.navy }]}>
+                  <Text numberOfLines={2} style={[s.ajioSplitTitle, { color: "#FFFFFF" }]}>
                     {headlinerBanner.title || "COLOR & STYLE EDIT"}
                   </Text>
                   <View style={s.ajioSplitDivider} />
                   <Text style={s.ajioSplitOffer}>MIN. 50% OFF*</Text>
-                  <View style={[s.ajioSplitBtn, { borderColor: c.navy }]}>
-                    <Text style={[s.ajioSplitBtnText, { color: c.navy }]}>
+                  <View style={s.ajioSplitBtn}>
+                    <Text style={s.ajioSplitBtnText}>
                       SHOP NOW ›
                     </Text>
                   </View>
@@ -458,16 +488,30 @@ export default function Home() {
                       end={{ x: 1, y: 0.5 }}
                       style={StyleSheet.absoluteFill}
                     />
-                    <View style={s.ajioDeptCard}>
-                      <Text style={[s.ajioSplitBrand, { color: c.gold }]}>
+                    <View
+                      style={[
+                        s.ajioDeptCard,
+                        Platform.OS === "web"
+                          ? ({
+                              backgroundImage:
+                                "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
+                              backdropFilter: "blur(26px) saturate(185%)",
+                              WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                              boxShadow:
+                                "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                            } as any)
+                          : null,
+                      ]}
+                    >
+                      <Text style={[s.ajioSplitBrand, { color: "#FDE68A" }]}>
                         FLOMA MEN
                       </Text>
-                      <Text style={[s.ajioSplitTitle, { color: c.navy }]}>
+                      <Text style={[s.ajioSplitTitle, { color: "#FFFFFF" }]}>
                         MENSWEAR EDIT
                       </Text>
                       <Text style={s.ajioSplitOffer}>MIN. 35% OFF*</Text>
-                      <View style={[s.ajioSplitBtn, { borderColor: c.navy }]}>
-                        <Text style={[s.ajioSplitBtnText, { color: c.navy }]}>
+                      <View style={s.ajioSplitBtn}>
+                        <Text style={s.ajioSplitBtnText}>
                           EXPLORE MEN ›
                         </Text>
                       </View>
@@ -495,16 +539,30 @@ export default function Home() {
                       end={{ x: 1, y: 0.5 }}
                       style={StyleSheet.absoluteFill}
                     />
-                    <View style={s.ajioDeptCard}>
-                      <Text style={[s.ajioSplitBrand, { color: c.gold }]}>
+                    <View
+                      style={[
+                        s.ajioDeptCard,
+                        Platform.OS === "web"
+                          ? ({
+                              backgroundImage:
+                                "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
+                              backdropFilter: "blur(26px) saturate(185%)",
+                              WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                              boxShadow:
+                                "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                            } as any)
+                          : null,
+                      ]}
+                    >
+                      <Text style={[s.ajioSplitBrand, { color: "#FDE68A" }]}>
                         FLOMA WOMEN
                       </Text>
-                      <Text style={[s.ajioSplitTitle, { color: c.navy }]}>
+                      <Text style={[s.ajioSplitTitle, { color: "#FFFFFF" }]}>
                         WOMENSWEAR EDIT
                       </Text>
                       <Text style={s.ajioSplitOffer}>MIN. 40% OFF*</Text>
-                      <View style={[s.ajioSplitBtn, { borderColor: c.navy }]}>
-                        <Text style={[s.ajioSplitBtnText, { color: c.navy }]}>
+                      <View style={s.ajioSplitBtn}>
+                        <Text style={s.ajioSplitBtnText}>
                           EXPLORE WOMEN ›
                         </Text>
                       </View>
@@ -747,60 +805,81 @@ export default function Home() {
   );
 
   return (
-    <ScrollView
-      testID="home-screen"
-      style={{ flex: 1, backgroundColor: c.background }}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 25 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={loading}
-          onRefresh={load}
-          tintColor={c.foreground}
-        />
-      }
-    >
+    <View style={{ flex: 1, backgroundColor: c.background }}>
       <View
-        style={{
-          height: banners.length ? heroHeight : insets.top + 103,
-          backgroundColor: c.card,
-        }}
+        style={[
+          s.stickyHeader,
+          {
+            paddingTop: insets.top,
+            backgroundColor: headerSolid ? "#D4E4FF" : "transparent",
+            borderBottomWidth: headerSolid ? 1 : 0,
+            borderBottomColor: headerSolid ? "#C0D5F5" : "transparent",
+          },
+        ]}
       >
-        {banners.length > 0 && (
-          <CampaignCarousel
-            banners={banners}
-            height={heroHeight}
-            headerSpace={insets.top + 99}
-          />
-        )}
-        <View style={[s.heroHeader, { paddingTop: insets.top }]}>
-          <StoreHeader
-            inverse={banners.length > 0}
-            query={query}
-            onChangeQuery={setQuery}
-            onSearch={(q) =>
-              router.push({ pathname: "/products", params: { q } })
-            }
-          />
-          <DepartmentTabs
-            inverse={banners.length > 0}
-            tabs={[
-              { id: "", name: "All" },
-              ...roots.map((cat) => ({ id: cat.id, name: cat.name })),
-              { id: "__fresh", name: "Fresh Fits" },
-              { id: "__offers", name: "Offers" },
-            ]}
-            active={active}
-            onChange={(id) =>
-              id === "__offers"
-                ? router.push("/offers")
-                : id === "__fresh"
-                  ? router.push("/(tabs)/fresh-fits")
-                  : setActive(id)
-            }
-          />
-        </View>
+        <StoreHeader
+          inverse={banners.length > 0 && !headerSolid}
+          headerSolid={headerSolid}
+          query={query}
+          onChangeQuery={setQuery}
+          onSearch={(q) =>
+            router.push({ pathname: "/products", params: { q } })
+          }
+        />
       </View>
+
+      <ScrollView
+        testID="home-screen"
+        style={{ flex: 1, backgroundColor: c.background }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 25 }}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          const y = e.nativeEvent.contentOffset.y;
+          const solid = y > 36;
+          if (solid !== headerSolid) setHeaderSolid(solid);
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={load}
+            tintColor={c.foreground}
+          />
+        }
+      >
+        <View
+          style={{
+            height: banners.length ? heroHeight : insets.top + 103,
+            backgroundColor: c.card,
+          }}
+        >
+          {banners.length > 0 && (
+            <CampaignCarousel
+              banners={banners}
+              height={heroHeight}
+              headerSpace={insets.top + 99}
+            />
+          )}
+          <View style={[s.heroHeader, { paddingTop: insets.top + 56 }]}>
+            <DepartmentTabs
+              inverse={banners.length > 0}
+              tabs={[
+                { id: "", name: "All" },
+                ...roots.map((cat) => ({ id: cat.id, name: cat.name })),
+                { id: "__fresh", name: "Fresh Fits" },
+                { id: "__offers", name: "Offers" },
+              ]}
+              active={active}
+              onChange={(id) =>
+                id === "__offers"
+                  ? router.push("/offers")
+                  : id === "__fresh"
+                    ? router.push("/(tabs)/fresh-fits")
+                    : setActive(id)
+              }
+            />
+          </View>
+        </View>
       <View
         style={[
           s.benefits,
@@ -1051,7 +1130,8 @@ export default function Home() {
           </TouchableOpacity>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1188,14 +1268,17 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   ajioSplitCard: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.50)",
     width: 340,
     paddingVertical: 26,
     paddingHorizontal: 28,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
+    shadowOpacity: 0.22,
+    shadowRadius: 22,
   },
   ajioSplitBrand: {
     fontSize: 10.5,
@@ -1212,23 +1295,26 @@ const s = StyleSheet.create({
   ajioSplitDivider: {
     width: 44,
     height: 1.5,
-    backgroundColor: "#C8A97E",
+    backgroundColor: "rgba(253, 230, 138, 0.72)",
     marginVertical: 11,
   },
   ajioSplitOffer: {
     fontSize: 18,
-    color: "#151515",
+    color: "#FFFFFF",
     fontFamily: "GoogleSans_700Bold",
     marginBottom: 14,
   },
   ajioSplitBtn: {
     borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.62)",
+    borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 18,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255, 255, 255, 0.20)",
   },
   ajioSplitBtnText: {
     fontSize: 11,
+    color: "#FFFFFF",
     letterSpacing: 1,
     fontFamily: "GoogleSans_700Bold",
   },
@@ -1330,7 +1416,10 @@ const s = StyleSheet.create({
     backgroundColor: "#1F2937",
   },
   ajioDeptCard: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.50)",
     width: 310,
     paddingVertical: 22,
     paddingHorizontal: 24,
@@ -1436,6 +1525,13 @@ const s = StyleSheet.create({
   },
 
   // Mobile Styles
+  stickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+  },
   heroHeader: { position: "absolute", top: 0, left: 0, right: 0 },
   benefits: {
     margin: 6,

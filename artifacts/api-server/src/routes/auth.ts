@@ -644,10 +644,30 @@ router.get("/google-bridge", (req, res) => {
         errEl.style.display = 'block';
       });
 
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         errEl.style.display = 'none';
         statusEl.textContent = 'Opening Google Sign-In…';
-        auth.signInWithRedirect(provider);
+        try {
+          const res = await auth.signInWithPopup(provider);
+          if (res && res.user) {
+            statusEl.textContent = 'Signed in! Returning to FLOMA…';
+            const idToken = await res.user.getIdToken();
+            finish({ idToken });
+            return;
+          }
+        } catch (e) {
+          const code = e && e.code ? String(e.code) : '';
+          if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+            auth.signInWithRedirect(provider);
+            return;
+          }
+          if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+            errEl.textContent = 'Google sign-in was cancelled.';
+            errEl.style.display = 'block';
+            return;
+          }
+          auth.signInWithRedirect(provider);
+        }
       });
     }
   </script>

@@ -112,7 +112,7 @@ export function StoreHeader({
       >
         <TextInput
           accessibilityLabel="Search products"
-          placeholder="Search for styles, brands…"
+          placeholder="Search Floma"
           placeholderTextColor="#64748B"
           value={value}
           onChangeText={setText}
@@ -311,7 +311,7 @@ const s = StyleSheet.create({
     minWidth: 0,
     height: 40,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",

@@ -157,7 +157,7 @@ export function DesktopStoreHeader({
                   }}
                 >
                   <Text style={[s.utilityLink, { color: c.mutedForeground }]}>
-                    Hi, {user.name.split(" ")[0]}
+                    Hi, {(user.name || "Shopper").split(" ")[0]}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -285,8 +285,8 @@ export function DesktopStoreHeader({
                 ]}
               >
                 <TextInput
-                  accessibilityLabel="Search FLOMA"
-                  placeholder="Search FLOMA"
+                  accessibilityLabel="Search Floma"
+                  placeholder="Search Floma"
                   placeholderTextColor="#6E7881"
                   value={value}
                   onChangeText={onChangeQuery || setLocalQuery}
@@ -639,7 +639,7 @@ const s = StyleSheet.create({
     height: 36,
     width: 260,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
     paddingLeft: 16,
