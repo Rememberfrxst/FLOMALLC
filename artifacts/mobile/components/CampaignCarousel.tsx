@@ -102,11 +102,11 @@ export default function CampaignCarousel({
                     Platform.OS === "web"
                       ? ({
                           backgroundImage:
-                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
-                          backdropFilter: "blur(26px) saturate(185%)",
-                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                            "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.08) 100%)",
+                          backdropFilter: "blur(8px) saturate(135%)",
+                          WebkitBackdropFilter: "blur(8px) saturate(135%)",
                           boxShadow:
-                            "0 20px 48px rgba(0, 0, 0, 0.30), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                            "0 12px 32px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.42)",
                         } as any)
                       : null,
                   ]}
@@ -301,19 +301,19 @@ const s = StyleSheet.create({
     paddingHorizontal: 72,
   },
   desktopCard: {
-    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    backgroundColor: "rgba(15, 23, 42, 0.10)",
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.50)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.34)",
     paddingVertical: 28,
     paddingHorizontal: 32,
     width: 390,
     maxWidth: "90%",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
   },
   desktopBrandTag: {
     fontSize: 10.5,
@@ -321,6 +321,9 @@ const s = StyleSheet.create({
     color: "#FDE68A",
     fontFamily: "GoogleSans_700Bold",
     marginBottom: 8,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   desktopTitle: {
     fontSize: 24,
@@ -329,6 +332,9 @@ const s = StyleSheet.create({
     textAlign: "center",
     fontFamily: "GoogleSans_700Bold",
     letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   desktopDivider: {
     width: 48,
@@ -339,9 +345,12 @@ const s = StyleSheet.create({
   desktopSubtitle: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "rgba(255, 255, 255, 0.90)",
+    color: "rgba(255, 255, 255, 0.94)",
     textAlign: "center",
     marginBottom: 12,
+    textShadowColor: "rgba(0, 0, 0, 0.40)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   desktopOfferLine: {
     fontSize: 19,
@@ -349,14 +358,17 @@ const s = StyleSheet.create({
     fontFamily: "GoogleSans_700Bold",
     letterSpacing: 0.6,
     marginBottom: 16,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   desktopCta: {
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.62)",
+    borderColor: "rgba(255, 255, 255, 0.46)",
     borderRadius: 10,
     paddingVertical: 9,
     paddingHorizontal: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
   },
   desktopCtaText: {
     color: "#FFFFFF",

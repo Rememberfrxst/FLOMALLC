@@ -600,8 +600,9 @@ router.get("/google-bridge", (req, res) => {
     .card{max-width:380px;width:100%;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px;text-align:center;box-shadow:0 10px 30px rgba(15,23,42,.08)}
     h1{font-size:20px;margin:0 0 8px}
     p{font-size:14px;color:#475569;margin:0 0 20px;line-height:1.5}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px 18px;border-radius:12px;border:1px solid #CBD5E1;background:#fff;color:#0F172A;font-weight:600;font-size:15px;cursor:pointer}
-    .err{margin-top:14px;color:#DC2626;font-size:13px;display:none}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px 18px;border-radius:12px;border:1px solid #CBD5E1;background:#fff;color:#0F172A;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;box-sizing:border-box}
+    .primary{background:#0F172A;color:#fff;border-color:#0F172A;margin-top:12px;display:none}
+    .err{margin-top:14px;color:#DC2626;font-size:13px;display:none;word-break:break-word}
   </style>
   <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
@@ -609,8 +610,9 @@ router.get("/google-bridge", (req, res) => {
 <body>
   <div class="card">
     <h1>Sign in to FLOMA</h1>
-    <p id="status">Connecting to Google…</p>
+    <p id="status">Tap below to continue with your Google account</p>
     <button id="go" class="btn" type="button">Continue with Google</button>
+    <a id="returnLink" class="btn primary" href="#">Return to FLOMA App</a>
     <div id="err" class="err"></div>
   </div>
   <script>
@@ -619,10 +621,16 @@ router.get("/google-bridge", (req, res) => {
     const statusEl = document.getElementById('status');
     const errEl = document.getElementById('err');
     const btn = document.getElementById('go');
+    const returnLink = document.getElementById('returnLink');
+    const isMobileUA = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
 
     function finish(params) {
       const sep = redirectTarget.includes('?') ? '&' : '?';
-      window.location.replace(redirectTarget + sep + new URLSearchParams(params).toString());
+      const targetUrl = redirectTarget + sep + new URLSearchParams(params).toString();
+      returnLink.href = targetUrl;
+      returnLink.style.display = 'inline-flex';
+      btn.style.display = 'none';
+      window.location.replace(targetUrl);
     }
 
     if (!firebaseConfig.apiKey) {
@@ -632,6 +640,7 @@ router.get("/google-bridge", (req, res) => {
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
 
       auth.getRedirectResult().then(async (res) => {
         if (res && res.user) {
@@ -647,6 +656,10 @@ router.get("/google-bridge", (req, res) => {
       btn.addEventListener('click', async () => {
         errEl.style.display = 'none';
         statusEl.textContent = 'Opening Google Sign-In…';
+        if (isMobileUA) {
+          auth.signInWithRedirect(provider);
+          return;
+        }
         try {
           const res = await auth.signInWithPopup(provider);
           if (res && res.user) {
@@ -657,11 +670,8 @@ router.get("/google-bridge", (req, res) => {
           }
         } catch (e) {
           const code = e && e.code ? String(e.code) : '';
-          if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-            auth.signInWithRedirect(provider);
-            return;
-          }
           if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+            statusEl.textContent = 'Tap below to continue with your Google account';
             errEl.textContent = 'Google sign-in was cancelled.';
             errEl.style.display = 'block';
             return;

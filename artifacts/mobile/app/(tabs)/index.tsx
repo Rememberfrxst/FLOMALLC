@@ -325,11 +325,11 @@ export default function Home() {
                     Platform.OS === "web"
                       ? ({
                           backgroundImage:
-                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
-                          backdropFilter: "blur(26px) saturate(185%)",
-                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                            "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.08) 100%)",
+                          backdropFilter: "blur(8px) saturate(135%)",
+                          WebkitBackdropFilter: "blur(8px) saturate(135%)",
                           boxShadow:
-                            "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                            "0 12px 32px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.42)",
                         } as any)
                       : null,
                   ]}
@@ -378,11 +378,11 @@ export default function Home() {
                     Platform.OS === "web"
                       ? ({
                           backgroundImage:
-                            "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.20) 100%)",
-                          backdropFilter: "blur(26px) saturate(185%)",
-                          WebkitBackdropFilter: "blur(26px) saturate(185%)",
+                            "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.08) 100%)",
+                          backdropFilter: "blur(8px) saturate(135%)",
+                          WebkitBackdropFilter: "blur(8px) saturate(135%)",
                           boxShadow:
-                            "0 20px 48px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.72), inset 0 -1px 2px rgba(255, 255, 255, 0.22)",
+                            "0 12px 32px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.42)",
                         } as any)
                       : null,
                   ]}
@@ -1268,29 +1268,35 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   ajioSplitCard: {
-    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    backgroundColor: "rgba(15, 23, 42, 0.10)",
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.50)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.34)",
     width: 340,
     paddingVertical: 26,
     paddingHorizontal: 28,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
   },
   ajioSplitBrand: {
     fontSize: 10.5,
     letterSpacing: 1.6,
     fontFamily: "GoogleSans_700Bold",
     marginBottom: 6,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   ajioSplitTitle: {
     fontSize: 20,
     textAlign: "center",
     fontFamily: "GoogleSans_700Bold",
     lineHeight: 26,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   ajioSplitDivider: {
     width: 44,
@@ -1303,14 +1309,17 @@ const s = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "GoogleSans_700Bold",
     marginBottom: 14,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   ajioSplitBtn: {
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.62)",
+    borderColor: "rgba(255, 255, 255, 0.46)",
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
   },
   ajioSplitBtnText: {
     fontSize: 11,
@@ -1416,10 +1425,10 @@ const s = StyleSheet.create({
     backgroundColor: "#1F2937",
   },
   ajioDeptCard: {
-    backgroundColor: "rgba(15, 23, 42, 0.30)",
+    backgroundColor: "rgba(15, 23, 42, 0.10)",
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.50)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.34)",
     width: 310,
     paddingVertical: 22,
     paddingHorizontal: 24,

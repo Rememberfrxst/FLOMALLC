@@ -57,32 +57,61 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
-async function checkServerReachable(baseUrl: string): Promise<boolean> {
+async function probeBridgeBase(
+  candidateBase: string,
+): Promise<{ ok: boolean; status?: number }> {
   const controller =
     typeof AbortController !== "undefined" ? new AbortController() : undefined;
   const timer = controller
-    ? setTimeout(() => controller.abort(), 3500)
+    ? setTimeout(() => controller.abort(), 8000)
     : undefined;
   try {
-    const res = await fetch(`${baseUrl}/healthz`, {
+    const res = await fetch(`${candidateBase}/healthz`, {
       method: "GET",
       ...(controller ? { signal: controller.signal } : {}),
     });
     const ct = res.headers.get("content-type") || "";
-    return res.ok && ct.includes("application/json");
+    return {
+      ok: res.ok && ct.includes("application/json"),
+      status: res.status,
+    };
   } catch {
-    return false;
+    return { ok: false };
   } finally {
     if (timer) clearTimeout(timer);
   }
 }
 
+async function resolveWorkingBridgeBase(
+  rawBaseUrl: string,
+): Promise<{ baseUrl: string | null; status?: number }> {
+  const clean = rawBaseUrl.replace(/\/+$/, "");
+  const candidates = clean.endsWith("/api")
+    ? [clean]
+    : [clean, `${clean}/api`];
+  let lastStatus: number | undefined;
+  for (const candidate of candidates) {
+    const res = await probeBridgeBase(candidate);
+    if (res.ok) return { baseUrl: candidate, status: res.status };
+    if (res.status !== undefined) lastStatus = res.status;
+  }
+  return { baseUrl: null, status: lastStatus };
+}
+
 export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
-  const baseUrl = getApiBaseUrl();
-  const serverOnline = await checkServerReachable(baseUrl);
-  if (!serverOnline) {
+  const rawBaseUrl = getApiBaseUrl();
+  const { baseUrl: workingBase, status } =
+    await resolveWorkingBridgeBase(rawBaseUrl);
+
+  if (!workingBase) {
+    const reason =
+      status === 404
+        ? "Your APK's API URL returned 404 (not deployed/shared yet)."
+        : status
+          ? `Server returned HTTP ${status}.`
+          : "Server could not be reached.";
     throw new Error(
-      "Google Sign-In needs the FLOMA server to be online. You can still sign in or create an account with Email & Password below.",
+      `Google Sign-In cannot connect (${reason}) You can sign in or create an account right now using Email & Password below.`,
     );
   }
 
@@ -93,7 +122,7 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
     // fallback to scheme deep link
   }
 
-  const bridgeUrl = `${baseUrl}/auth/google-bridge?redirect=${encodeURIComponent(redirectUrl)}`;
+  const bridgeUrl = `${workingBase}/auth/google-bridge?redirect=${encodeURIComponent(redirectUrl)}`;
 
   let result: WebBrowser.WebBrowserAuthSessionResult;
   try {
