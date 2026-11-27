@@ -18,6 +18,7 @@ import { ProductGrid, LoadState } from "@/components/ShopUI";
 import { StoreHeader, DepartmentTabs } from "@/components/StoreHeader";
 import CampaignCarousel from "@/components/CampaignCarousel";
 import CategoryThumbnail from "@/components/CategoryThumbnail";
+import StorefrontSkeleton from "@/components/StorefrontSkeleton";
 import ProductFiltersBar, { ProductFilters } from "@/components/ProductFilters";
 import { useColors } from "@/hooks/useColors";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
@@ -89,7 +90,8 @@ export default function Home() {
   const [more, setMore] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [query, setQuery] = useState("");
-  const [headerSolid, setHeaderSolid] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const params = {
     category: active,
@@ -122,7 +124,11 @@ export default function Home() {
     } catch {
       if (sequence === requestSequence.current) setError(true);
     } finally {
-      if (sequence === requestSequence.current) setLoading(false);
+      if (sequence === requestSequence.current) {
+        setLoading(false);
+        setInitialLoad(false);
+        setRefreshing(false);
+      }
     }
   }, [
     active,
@@ -141,6 +147,11 @@ export default function Home() {
     }, [load]),
   );
 
+  const refresh = () => {
+    setRefreshing(true);
+    void load();
+  };
+
   const loadMore = async () => {
     const sequence = requestSequence.current;
     setFetchingMore(true);
@@ -155,7 +166,7 @@ export default function Home() {
       setPage((p) => p + 1);
       setMore(result.data.length === 20);
     } catch {
-      setError(true);
+      if (sequence === requestSequence.current) setError(true);
     } finally {
       setFetchingMore(false);
     }
@@ -178,7 +189,11 @@ export default function Home() {
   const featured = allLoaded.filter((p) => p.isFeatured);
   const heroHeight = desktop
     ? Math.min(480, Math.max(360, width * 0.34))
-    : width * 0.79 + insets.top;
+    : Math.min(400, Math.max(220, width * 0.72));
+
+  if (initialLoad) {
+    return <StorefrontSkeleton desktop={desktop} heroHeight={heroHeight} />;
+  }
 
   // ─── AJIO-EXACT DESKTOP WEB STOREFRONT ─────────────────────────────────────
   if (desktop) {
@@ -744,82 +759,47 @@ export default function Home() {
     );
   }
 
-  // ─── MOBILE / NATIVE STOREFRONT (Preserved Cleanly) ────────────────────────
-  const collection = (
-    title: string,
-    list: ApiProduct[],
-    sort: string,
-    tint: string,
-  ) => (
-    <TouchableOpacity
-      key={title}
-      accessibilityRole="button"
-      accessibilityLabel={`View ${title}`}
-      onPress={() => browse(sort, title, active)}
-      style={[s.collection, { backgroundColor: tint }]}
-    >
-      <View style={s.collectionHead}>
-        <Text
-          style={{
-            fontSize: 15,
-            color: c.foreground,
-            fontFamily: "GoogleSans_700Bold",
-            fontStyle: "italic",
-          }}
-        >
-          {title}
-        </Text>
-        <Icon name="chevron-forward" size={20} />
-      </View>
-      <View style={{ flexDirection: "row", gap: 3 }}>
-        {list.slice(0, 2).map((p) => (
-          <View key={p.id} style={{ flex: 1 }}>
-            <Image
-              source={{
-                uri:
-                  p.images?.[0]?.url ||
-                  (p as ApiProduct & { imageUrl?: string }).imageUrl,
-              }}
-              style={{
-                width: "100%",
-                aspectRatio: 0.7,
-                backgroundColor: c.secondary,
-              }}
-              contentFit="cover"
-            />
-            <Text
-              style={{
-                color: c.accent,
-                fontFamily: "GoogleSans_700Bold",
-                fontSize: 14,
-                marginTop: 8,
-                marginBottom: 4,
-              }}
-            >
-              {formatPrice(Number(p.price))}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </TouchableOpacity>
-  );
+  const tileSize = Math.min(92, (width - 52) / 5);
+  const offer = offers[0];
+  const discount = offer
+    ? offer.discountType === "percentage"
+      ? `${Number(offer.discountValue)}% off`
+      : `${formatPrice(Number(offer.discountValue))} off`
+    : null;
+  const departments = [
+    { id: "", name: "All" },
+    ...roots.map((cat) => ({ id: cat.id, name: cat.name })),
+    { id: "__fresh", name: "Fresh Fits" },
+    { id: "__offers", name: "Offers" },
+  ];
+  const sections = [
+    {
+      title: "New arrivals",
+      products: newest,
+      sort: "newest",
+      color: "#542235",
+    },
+    {
+      title: "Best sellers",
+      products: best,
+      sort: "popular",
+      color: "#233B38",
+    },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <View
         style={[
-          s.stickyHeader,
+          s.mobileHeader,
           {
             paddingTop: insets.top,
-            backgroundColor: headerSolid ? "#D4E4FF" : "transparent",
-            borderBottomWidth: headerSolid ? 1 : 0,
-            borderBottomColor: headerSolid ? "#C0D5F5" : "transparent",
+            backgroundColor: c.card,
+            borderColor: c.border,
           },
         ]}
       >
         <StoreHeader
-          inverse={banners.length > 0 && !headerSolid}
-          headerSolid={headerSolid}
           query={query}
           onChangeQuery={setQuery}
           onSearch={(q) =>
@@ -827,309 +807,215 @@ export default function Home() {
           }
         />
       </View>
-
       <ScrollView
         testID="home-screen"
-        style={{ flex: 1, backgroundColor: c.background }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 25 }}
-        scrollEventThrottle={16}
-        onScroll={(e) => {
-          const y = e.nativeEvent.contentOffset.y;
-          const solid = y > 36;
-          if (solid !== headerSolid) setHeaderSolid(solid);
-        }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={load}
+            refreshing={refreshing}
+            onRefresh={refresh}
             tintColor={c.foreground}
           />
         }
       >
-        <View
-          style={{
-            height: banners.length ? heroHeight : insets.top + 103,
-            backgroundColor: c.card,
+        <DepartmentTabs
+          tabs={departments}
+          active={active}
+          onChange={(id) => {
+            if (id === "__offers") router.push("/offers");
+            else if (id === "__fresh") router.push("/(tabs)/fresh-fits");
+            else setActive(id);
           }}
-        >
-          {banners.length > 0 && (
-            <CampaignCarousel
-              banners={banners}
-              height={heroHeight}
-              headerSpace={insets.top + 99}
-            />
-          )}
-          <View style={[s.heroHeader, { paddingTop: insets.top + 56 }]}>
-            <DepartmentTabs
-              inverse={banners.length > 0}
-              tabs={[
-                { id: "", name: "All" },
-                ...roots.map((cat) => ({ id: cat.id, name: cat.name })),
-                { id: "__fresh", name: "Fresh Fits" },
-                { id: "__offers", name: "Offers" },
-              ]}
-              active={active}
-              onChange={(id) =>
-                id === "__offers"
-                  ? router.push("/offers")
-                  : id === "__fresh"
-                    ? router.push("/(tabs)/fresh-fits")
-                    : setActive(id)
-              }
-            />
-          </View>
-        </View>
-      <View
-        style={[
-          s.benefits,
-          { backgroundColor: "#FFF2D9", borderColor: "#F3DEC0" },
-        ]}
-      >
+        />
+        {banners.length > 0 && (
+          <CampaignCarousel banners={banners} height={heroHeight} />
+        )}
         <TouchableOpacity
           accessibilityRole="button"
-          onPress={() =>
-            router.push({ pathname: "/help", params: { section: "shipping" } })
-          }
-          style={s.benefit}
+          onPress={() => router.push("/offers")}
+          style={s.savingsStrip}
         >
-          <Icon name="car" size={17} color="#773E17" />
-          <View>
-            <Text style={s.benefitTitle}>Free Shipping</Text>
-            <Text style={s.benefitSub}>
-              Orders from ₹{store.freeShippingThreshold}*
-            </Text>
-          </View>
+          <Icon name="pricetag-outline" size={17} color="#402716" />
+          <Text style={s.savingsText}>
+            {offer ? `${discount} with ${offer.code}` : "Shop store offers"}
+          </Text>
+          <Icon name="chevron-forward" size={17} color="#402716" />
         </TouchableOpacity>
-        <View style={{ height: 32, width: 1, backgroundColor: "#C6A47D" }} />
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() =>
-            router.push({ pathname: "/help", params: { section: "returns" } })
-          }
-          style={s.benefit}
-        >
-          <Icon name="return-down-back" size={17} color="#773E17" />
-          <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={s.benefitTitle}>
+        {displayTiles.length > 0 && (
+          <View style={s.mobileSection}>
+            <Text style={[s.mobileTitle, { color: c.foreground }]}>
+              Shop by category
+            </Text>
+            <View style={s.categoryGrid}>
+              {displayTiles.slice(0, 15).map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Shop ${cat.name}`}
+                  onPress={() => browse("popular", cat.name, cat.slug)}
+                  style={s.categoryTile}
+                >
+                  <CategoryThumbnail
+                    category={cat}
+                    size={tileSize}
+                    radius={tileSize / 2}
+                  />
+                  <Text
+                    numberOfLines={2}
+                    style={[s.categoryLabel, { color: c.foreground }]}
+                  >
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        <View style={[s.benefits, { backgroundColor: c.secondary }]}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({
+                pathname: "/help",
+                params: { section: "shipping" },
+              })
+            }
+            style={s.benefit}
+          >
+            <Icon name="car-outline" size={19} color={c.foreground} />
+            <Text style={[s.benefitText, { color: c.foreground }]}>
+              Free shipping from {formatPrice(store.freeShippingThreshold)}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({ pathname: "/help", params: { section: "returns" } })
+            }
+            style={s.benefit}
+          >
+            <Icon
+              name="return-down-back-outline"
+              size={19}
+              color={c.foreground}
+            />
+            <Text style={[s.benefitText, { color: c.foreground }]}>
               {store.returnsHeadline}
             </Text>
-            <Text style={s.benefitSub}>Customer care is here to help</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        accessibilityRole="button"
-        onPress={() =>
-          offers.length
-            ? router.push("/offers")
-            : browse("popular", "Exclusive Picks")
-        }
-        style={s.exclusive}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={s.exclusiveTitle}>
-            {store.storeName.toUpperCase()} Exclusive Picks
-          </Text>
-          <Text numberOfLines={2} style={s.exclusiveSub}>
-            {store.announcement}
-          </Text>
-        </View>
-        <View style={s.exclusiveCta}>
-          <Text
-            style={{
-              color: "#C84267",
-              fontSize: 9,
-              fontFamily: "GoogleSans_700Bold",
-              textAlign: "center",
-            }}
-          >
-            {offers.length ? "SHOP\nSTORE OFFERS" : "EXPLORE\nTHE PICKS"}
-          </Text>
-        </View>
-      </TouchableOpacity>
-      <View style={[s.categoryGrid, { backgroundColor: c.card }]}>
-        {displayTiles.slice(0, 14).map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            onPress={() => browse("popular", cat.name, cat.slug)}
-            style={s.categoryTile}
-          >
-            <CategoryThumbnail
-              category={cat}
-              size={Math.max(51, (width - 50) / 5)}
-              radius={23}
-            />
-            <Text
-              numberOfLines={2}
-              style={{
-                fontSize: 11,
-                color: c.mutedForeground,
-                textAlign: "center",
-                marginTop: 7,
-                minHeight: 28,
-              }}
-            >
-              {cat.name}
-            </Text>
           </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          accessibilityLabel="View all offers"
-          onPress={() => router.push("/offers")}
-          style={s.categoryTile}
-        >
-          <View
-            style={[
-              s.offerBubble,
-              {
-                width: Math.max(51, (width - 50) / 5),
-                height: Math.max(51, (width - 50) / 5),
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 11,
-                textAlign: "center",
-                fontFamily: "GoogleSans_700Bold",
-              }}
+        </View>
+
+        {sections
+          .filter((section) => section.products.length > 0)
+          .map((section) => (
+            <View
+              key={section.sort}
+              style={[s.collection, { backgroundColor: section.color }]}
             >
-              Store{"\n"}Offers
-            </Text>
-          </View>
-          <Text style={{ fontSize: 11, color: c.mutedForeground, marginTop: 7 }}>
-            Offers
-          </Text>
-        </TouchableOpacity>
-      </View>
-      {roots.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.edits}
-        >
-          {roots.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              accessibilityLabel={`Shop ${cat.name}`}
-              onPress={() => browse("popular", cat.name, cat.slug)}
-              style={{ width: width * 0.225 }}
-            >
-              <CategoryThumbnail
-                category={cat}
-                size={width * 0.225}
-                radius={2}
-              />
-              <View style={s.editCaption}>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 11,
-                    textAlign: "center",
-                    fontFamily: "GoogleSans_600SemiBold",
-                  }}
-                  numberOfLines={1}
-                >
-                  {cat.name}
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`Shop all ${section.title.toLowerCase()}`}
+                onPress={() => browse(section.sort, section.title, active)}
+                style={s.collectionHead}
+              >
+                <Text style={[s.mobileTitle, { color: "#FFFFFF" }]}>
+                  {section.title}
                 </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 11,
-                    textAlign: "center",
-                    fontFamily: "GoogleSans_700Bold",
-                    marginTop: 4,
-                  }}
-                >
-                  Shop now
-                </Text>
+                <Text style={s.collectionLink}>Shop all ›</Text>
+              </TouchableOpacity>
+              <View style={s.collectionRow}>
+                {section.products.slice(0, 3).map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={product.name}
+                    onPress={() => router.push(`/product/${product.id}`)}
+                    style={[s.collectionItem, { backgroundColor: c.card }]}
+                  >
+                    <Image
+                      source={getProductThumb(product) || undefined}
+                      style={[
+                        s.collectionImage,
+                        { backgroundColor: c.secondary },
+                      ]}
+                      contentFit="cover"
+                    />
+                    <View style={s.collectionDetails}>
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: c.foreground, fontSize: 11 }}
+                      >
+                        {product.name}
+                      </Text>
+                      <Text
+                        style={[s.collectionPrice, { color: c.foreground }]}
+                      >
+                        {formatPrice(Number(product.price))}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
+            </View>
           ))}
-        </ScrollView>
-      )}
-      {(newest.length > 0 || best.length > 0) && (
-        <View style={[s.collections, { backgroundColor: c.muted }]}>
-          {collection("New Arrivals", newest, "newest", c.secondary)}
-          {collection(
-            "Best Sellers",
-            best,
-            "popular",
-            c.background === "#FFFFFF" ? "#FFF0F0" : c.secondary,
-          )}
-        </View>
-      )}
-      {featured.length > 0 && (
-        <View style={s.featured}>
-          <Text
-            style={{
-              color: "#fff",
-              fontSize: 16,
-              fontFamily: "GoogleSans_700Bold",
-              marginBottom: 12,
-            }}
-          >
-            Featured offers
-          </Text>
-          <ProductGrid
-            products={featured.slice(0, 2).map(mapApiProduct)}
-            columns={2}
-          />
-          {offers.length > 0 && (
-            <Text style={{ fontSize: 9, color: "#FADFD5", paddingTop: 4 }}>
-              * Coupon minimum spend and offer terms apply.
-            </Text>
-          )}
-        </View>
-      )}
-      {banners.length > 1 && (
-        <View style={{ paddingVertical: 8, backgroundColor: c.muted }}>
+
+        {banners.length > 1 && (
           <CampaignCarousel
             banners={banners.slice(1)}
-            height={width * 0.38}
+            height={Math.max(170, width * 0.42)}
           />
-        </View>
-      )}
-      <View style={{ paddingTop: 13, backgroundColor: c.card }}>
-        <Text
-          style={{
-            fontSize: 19,
-            color: c.foreground,
-            textAlign: "center",
-            fontFamily: "GoogleSans_600SemiBold",
-            paddingVertical: 12,
-          }}
-        >
-          Recommend
-        </Text>
-        <ProductFiltersBar value={filters} onChange={setFilters} />
-      </View>
-      <View style={{ paddingHorizontal: 6, paddingTop: 7 }}>
-        {loading || error ? (
-          <LoadState
-            loading={loading}
-            error={error ? "load" : null}
-            retry={error ? load : undefined}
-          />
-        ) : products.length ? (
-          <ProductGrid products={products.map(mapApiProduct)} columns={2} />
-        ) : (
-          <LoadState empty="No products match these filters" />
         )}
-        {more && !error && (
-          <TouchableOpacity
-            onPress={loadMore}
-            disabled={fetchingMore}
-            style={{ padding: 18, alignItems: "center" }}
-          >
-            <Text style={{ fontSize: 13, color: c.foreground }}>
-              {fetchingMore ? "Loading…" : "Load more products"}
+        {featured.length > 0 && (
+          <View style={s.mobileSection}>
+            <Text style={[s.mobileTitle, { color: c.foreground }]}>
+              Featured picks
             </Text>
-          </TouchableOpacity>
+            <ProductGrid products={featured.slice(0, 2).map(mapApiProduct)} />
+          </View>
         )}
-      </View>
+
+        <View
+          style={[
+            s.catalogueHeader,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          <Text
+            style={[
+              s.mobileTitle,
+              { color: c.foreground, paddingHorizontal: 12 },
+            ]}
+          >
+            Recommended for you
+          </Text>
+          <ProductFiltersBar value={filters} onChange={setFilters} />
+        </View>
+        <View style={s.mobileSection}>
+          {loading || error ? (
+            <LoadState
+              loading={loading}
+              error={error ? "load" : null}
+              retry={error ? load : undefined}
+            />
+          ) : products.length ? (
+            <ProductGrid products={products.map(mapApiProduct)} />
+          ) : (
+            <LoadState empty="No products match these filters" />
+          )}
+          {more && !loading && !error && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={loadMore}
+              disabled={fetchingMore}
+              style={s.mobileLoadMore}
+            >
+              <Text style={{ fontSize: 13, color: c.foreground }}>
+                {fetchingMore ? "Loading…" : "Load more products"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -1533,100 +1419,76 @@ const s = StyleSheet.create({
     fontFamily: "GoogleSans_700Bold",
   },
 
-  // Mobile Styles
-  stickyHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 50,
-  },
-  heroHeader: { position: "absolute", top: 0, left: 0, right: 0 },
-  benefits: {
-    margin: 6,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderRadius: 3,
-    flexDirection: "row",
-    gap: 12,
-  },
-  benefit: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 7,
-    paddingHorizontal: 9,
-    alignItems: "flex-start",
-  },
-  benefitTitle: {
-    fontSize: 12,
-    color: "#864718",
+  mobileHeader: { borderBottomWidth: StyleSheet.hairlineWidth },
+  mobileSection: { padding: 12, gap: 12 },
+  mobileTitle: {
+    fontSize: 21,
     fontFamily: "GoogleSans_700Bold",
+    letterSpacing: -0.45,
   },
-  benefitSub: { fontSize: 10, color: "#864718", marginTop: 2 },
-  exclusive: {
-    backgroundColor: "#FFF0F5",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+  savingsStrip: {
+    backgroundColor: "#F7D8A8",
     flexDirection: "row",
-    gap: 12,
     alignItems: "center",
-    marginTop: 3,
-  },
-  exclusiveTitle: {
-    fontSize: 14,
-    fontFamily: "GoogleSans_700Bold",
-    color: "#D84570",
-  },
-  exclusiveSub: { fontSize: 9, color: "#D66787", marginTop: 3 },
-  exclusiveCta: {
-    borderWidth: 1,
-    borderColor: "#D84570",
-    borderRadius: 4,
-    padding: 7,
-  },
-  categoryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 7,
+    gap: 9,
+    paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  savingsText: {
+    flex: 1,
+    color: "#402716",
+    fontSize: 14,
+    fontFamily: "GoogleSans_700Bold",
+  },
+  categoryGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },
   categoryTile: {
     width: "20%",
     alignItems: "center",
-    paddingHorizontal: 3,
-    paddingBottom: 5,
+    gap: 6,
+    paddingHorizontal: 2,
   },
-  offerBubble: {
-    borderRadius: 25,
-    backgroundColor: "#EF251F",
-    alignItems: "center",
-    justifyContent: "center",
+  categoryLabel: {
+    textAlign: "center",
+    fontSize: 11,
+    fontFamily: "GoogleSans_500Medium",
   },
-  edits: { padding: 6, gap: 7 },
-  editCaption: {
-    backgroundColor: "#080808",
-    paddingVertical: 8,
-    paddingHorizontal: 3,
-  },
-  collections: {
+  benefits: {
     flexDirection: "row",
-    gap: 7,
-    padding: 6,
-    paddingVertical: 12,
+    gap: 12,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    padding: 12,
   },
-  collection: { flex: 1, padding: 6, borderRadius: 7 },
+  benefit: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+  benefitText: { flex: 1, fontSize: 11, fontFamily: "GoogleSans_600SemiBold" },
+  collection: {
+    marginHorizontal: 12,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    gap: 10,
+  },
   collectionHead: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 11,
-    marginTop: 6,
+    justifyContent: "space-between",
+    gap: 8,
   },
-  featured: {
-    backgroundColor: "#8C2212",
-    margin: 6,
-    padding: 11,
-    borderRadius: 4,
-    marginVertical: 12,
+  collectionLink: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: "GoogleSans_600SemiBold",
   },
+  collectionRow: { flexDirection: "row", gap: 6 },
+  collectionItem: { flex: 1, minWidth: 0, borderRadius: 4, overflow: "hidden" },
+  collectionImage: { width: "100%", aspectRatio: 0.76 },
+  collectionDetails: { padding: 6, gap: 2 },
+  collectionPrice: { fontSize: 12, fontFamily: "GoogleSans_700Bold" },
+  catalogueHeader: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 14,
+    gap: 8,
+    alignItems: "stretch",
+  },
+  mobileLoadMore: { padding: 18, alignItems: "center" },
 });
