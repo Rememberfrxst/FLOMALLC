@@ -1,48 +1,96 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
-import { useColors } from '@/hooks/useColors';
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useColors } from "@/hooks/useColors";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-interface SkeletonProps {
-  width?: number | string;
-  height?: number;
-  borderRadius?: number;
-  style?: object;
-}
-
-export default function SkeletonLoader({ width = '100%', height = 16, borderRadius = 8, style }: SkeletonProps) {
-  const colors = useColors();
-  const anim = useRef(new Animated.Value(0.4)).current;
-
+export function Shimmer({ children }: React.PropsWithChildren) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const [width, setWidth] = useState(0);
+  const reduced = useReducedMotion();
+  const c = useColors();
   useEffect(() => {
+    if (reduced || !width) return;
+    progress.setValue(0);
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 0.9, duration: 800, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
-      ])
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 950,
+        easing: Easing.linear,
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
     );
     loop.start();
     return () => loop.stop();
-  }, [anim]);
-
+  }, [progress, reduced, width]);
   return (
-    <Animated.View
-      style={[{ width: width as any, height, borderRadius, backgroundColor: colors.muted, opacity: anim }, style]}
-    />
-  );
-}
-
-export function ProductCardSkeleton() {
-  const colors = useColors();
-  return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 14 }]}>
-      <SkeletonLoader height={150} borderRadius={0} />
-      <View style={{ padding: 10, gap: 6 }}>
-        <SkeletonLoader height={13} />
-        <SkeletonLoader width="70%" height={11} />
-        <SkeletonLoader width="45%" height={14} />
-      </View>
+    <View
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{ overflow: "hidden" }}
+    >
+      {children}
+      {!reduced && width > 0 && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            width: width * 0.5,
+            transform: [
+              {
+                translateX: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-width * 0.5, width],
+                }),
+              },
+            ],
+          }}
+        >
+          <LinearGradient
+            colors={[
+              "transparent",
+              c.background === "#FFFFFF"
+                ? "rgba(255,255,255,0.75)"
+                : "rgba(255,255,255,0.08)",
+              "transparent",
+            ]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({ card: { overflow: 'hidden' } });
+export function ProductGridSkeleton() {
+  const c = useColors();
+  const fill = { backgroundColor: c.border, borderRadius: 6 };
+  return (
+    <View
+      testID="product-grid-skeleton"
+      accessible
+      accessibilityLabel="Loading products"
+      aria-busy
+    >
+      <Shimmer>
+        <View style={{ padding: 6, gap: 16 }}>
+          {[0, 1].map((row) => (
+            <View key={row} style={{ flexDirection: "row", gap: 10 }}>
+              {[0, 1].map((col) => (
+                <View key={col} style={{ flex: 1, gap: 8 }}>
+                  <View style={[fill, { aspectRatio: 1 }]} />
+                  <View style={[fill, { height: 12, width: "78%" }]} />
+                  <View style={[fill, { height: 10, width: "42%" }]} />
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      </Shimmer>
+    </View>
+  );
+}

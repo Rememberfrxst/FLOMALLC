@@ -11,6 +11,8 @@ import { router } from "expo-router";
 import { Text } from "./Text";
 import { TextInput } from "./TextInput";
 import { useColors } from "@/hooks/useColors";
+import { useDesktopWeb } from "@/hooks/useDesktopWeb";
+import { ProductGridSkeleton } from "./SkeletonLoader";
 import ProductCard from "./ProductCard";
 import { Product } from "@/constants/data";
 import { useWishlist } from "@/context/WishlistContext";
@@ -158,6 +160,8 @@ export function LoadState({
   empty?: string;
 }) {
   const c = useColors();
+  const desktop = useDesktopWeb();
+  if (loading && !desktop) return <ProductGridSkeleton />;
   return (
     <View style={s.empty}>
       {loading ? (

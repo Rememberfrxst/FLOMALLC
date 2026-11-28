@@ -2,6 +2,8 @@ import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   ScrollView,
+  Animated,
+  Platform,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
@@ -22,6 +24,7 @@ import ProductFiltersBar, { ProductFilters } from "@/components/ProductFilters";
 import { useColors } from "@/hooks/useColors";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
 import { useStorefront } from "@/hooks/useStorefront";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useOffers } from "@/hooks/useOffers";
 import { DesktopStoreFooter } from "@/components/DesktopStoreFooter";
 import {
@@ -69,6 +72,8 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const desktop = useDesktopWeb();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
   const store = useStorefront();
   const offers = useOffers();
   const requestSequence = useRef(0);
@@ -533,9 +538,23 @@ export default function Home() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <View
+      <Animated.View
+        testID="home-mobile-header"
         style={[
           s.mobileHeader,
+          !reducedMotion && {
+            zIndex: 1,
+            transform: [
+              {
+                scaleY: scrollY.interpolate({
+                  inputRange: [-100, 0, 96],
+                  outputRange: [1.12, 1, 0.94],
+                  extrapolate: "clamp",
+                }),
+              },
+            ],
+            transformOrigin: "top",
+          },
           {
             paddingTop: insets.top,
             backgroundColor: c.card,
@@ -550,8 +569,13 @@ export default function Home() {
             router.push({ pathname: "/products", params: { q } })
           }
         />
-      </View>
-      <ScrollView
+      </Animated.View>
+      <Animated.ScrollView
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: Platform.OS !== "web" },
+        )}
         testID="home-screen"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -573,7 +597,35 @@ export default function Home() {
           }}
         />
         {banners.length > 0 && (
-          <CampaignCarousel banners={banners} height={heroHeight} />
+          <View style={{ overflow: "hidden" }}>
+            <Animated.View
+              testID="home-stretch-banner"
+              style={
+                reducedMotion
+                  ? undefined
+                  : {
+                      transform: [
+                        {
+                          scale: scrollY.interpolate({
+                            inputRange: [-120, 0, heroHeight],
+                            outputRange: [1.2, 1, 1.12],
+                            extrapolate: "clamp",
+                          }),
+                        },
+                        {
+                          translateY: scrollY.interpolate({
+                            inputRange: [0, heroHeight],
+                            outputRange: [0, -heroHeight * 0.045],
+                            extrapolate: "clamp",
+                          }),
+                        },
+                      ],
+                    }
+              }
+            >
+              <CampaignCarousel banners={banners} height={heroHeight} />
+            </Animated.View>
+          </View>
         )}
         <TouchableOpacity
           accessibilityRole="button"
@@ -668,37 +720,46 @@ export default function Home() {
                 </Text>
                 <Text style={s.collectionLink}>Shop all ›</Text>
               </TouchableOpacity>
-              <View style={s.collectionRow}>
-                {section.products.slice(0, 3).map((product) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={product.name}
-                    onPress={() => router.push(`/product/${product.id}`)}
-                    style={[s.collectionItem, { backgroundColor: c.card }]}
-                  >
-                    <Image
-                      source={getProductThumb(product) || undefined}
-                      style={[
-                        s.collectionImage,
-                        { backgroundColor: c.secondary },
-                      ]}
-                      contentFit="cover"
-                    />
-                    <View style={s.collectionDetails}>
-                      <Text
-                        numberOfLines={1}
-                        style={{ color: c.foreground, fontSize: 11 }}
+              <View style={s.collectionGrid}>
+                {[0, 2].map((start) => (
+                  <View key={start} style={s.collectionRow}>
+                    {section.products.slice(start, start + 2).map((product) => (
+                      <TouchableOpacity
+                        key={product.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={product.name}
+                        onPress={() => router.push(`/product/${product.id}`)}
+                        style={[s.collectionItem, { backgroundColor: c.card }]}
                       >
-                        {product.name}
-                      </Text>
-                      <Text
-                        style={[s.collectionPrice, { color: c.foreground }]}
-                      >
-                        {formatPrice(Number(product.price))}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                        <Image
+                          source={getProductThumb(product) || undefined}
+                          style={[
+                            s.collectionImage,
+                            { backgroundColor: c.secondary },
+                          ]}
+                          contentFit="cover"
+                        />
+                        <View
+                          style={[
+                            s.collectionDetails,
+                            { backgroundColor: c.card },
+                          ]}
+                        >
+                          <Text
+                            numberOfLines={1}
+                            style={{ color: c.foreground, fontSize: 11 }}
+                          >
+                            {product.name}
+                          </Text>
+                          <Text
+                            style={[s.collectionPrice, { color: c.foreground }]}
+                          >
+                            {formatPrice(Number(product.price))}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 ))}
               </View>
             </View>
@@ -760,7 +821,7 @@ export default function Home() {
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -994,6 +1055,7 @@ const s = StyleSheet.create({
   benefit: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   benefitText: { flex: 1, fontSize: 11, fontFamily: "GoogleSans_600SemiBold" },
   collection: {
+    aspectRatio: 1,
     marginHorizontal: 12,
     marginBottom: 12,
     padding: 12,
@@ -1011,10 +1073,24 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontFamily: "GoogleSans_600SemiBold",
   },
-  collectionRow: { flexDirection: "row", gap: 6 },
-  collectionItem: { flex: 1, minWidth: 0, borderRadius: 4, overflow: "hidden" },
-  collectionImage: { width: "100%", aspectRatio: 0.76 },
-  collectionDetails: { padding: 6, gap: 2 },
+  collectionGrid: { flex: 1, aspectRatio: 1, alignSelf: "center", gap: 6 },
+  collectionRow: { flex: 1, flexDirection: "row", gap: 6 },
+  collectionItem: {
+    height: "100%",
+    aspectRatio: 1,
+    minWidth: 0,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  collectionImage: { width: "100%", aspectRatio: 1 },
+  collectionDetails: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 6,
+    gap: 2,
+  },
   collectionPrice: { fontSize: 12, fontFamily: "GoogleSans_700Bold" },
   catalogueHeader: {
     borderTopWidth: StyleSheet.hairlineWidth,

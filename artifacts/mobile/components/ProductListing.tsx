@@ -1,3 +1,4 @@
+import { ProductGridSkeleton } from "@/components/SkeletonLoader";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -85,11 +86,12 @@ export default function ProductListing({
       let active = true;
       setLoading(true);
       setError(false);
+      const controller = new AbortController();
       const timer = setTimeout(
         () =>
           api.products
             .list({
-              q: query,
+              q: query.trim(),
               category,
               sort: filters.sort,
               page,
@@ -101,7 +103,7 @@ export default function ProductListing({
                 ? { maxPrice: filters.maxPrice }
                 : {}),
               ...(filters.inStock ? { inStock: true } : {}),
-            })
+            }, controller.signal)
             .then((result) => {
               if (active) {
                 setItems((prev) =>
@@ -118,11 +120,12 @@ export default function ProductListing({
             .finally(() => {
               if (active) setLoading(false);
             }),
-        220,
+        query.trim() && page === 1 ? 180 : 0,
       );
       return () => {
         active = false;
         clearTimeout(timer);
+        controller.abort();
       };
     }, [
       query,
@@ -361,7 +364,7 @@ export default function ProductListing({
         contentContainerStyle={{ padding: 6, paddingBottom: 25 }}
       >
         {loading && page === 1 ? (
-          <LoadState loading />
+          <ProductGridSkeleton />
         ) : error ? (
           <LoadState error="load" retry={() => setRetry((n) => n + 1)} />
         ) : items.length ? (
@@ -369,7 +372,8 @@ export default function ProductListing({
         ) : (
           <LoadState empty="No products match your search" />
         )}
-        {more && !error && (
+        {loading && page > 1 && <ProductGridSkeleton />}
+        {more && !loading && !error && (
           <TouchableOpacity
             onPress={() => setPage((p) => p + 1)}
             disabled={loading}

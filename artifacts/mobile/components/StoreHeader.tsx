@@ -46,8 +46,9 @@ export function StoreHeader({
     fg = inverse ? "#FFFFFF" : headerSolid ? "#0F172A" : c.foreground;
 
   const search = () => {
-    if (onSearch) onSearch(value);
-    else router.push({ pathname: "/products", params: { q: value } });
+    const term = value.trim();
+    if (onSearch) onSearch(term);
+    else router.push({ pathname: "/products", params: { q: term } });
   };
 
   // The native/mobile header stays intact. Only a wide browser gets the
@@ -311,7 +312,7 @@ const s = StyleSheet.create({
     minWidth: 0,
     height: 40,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",

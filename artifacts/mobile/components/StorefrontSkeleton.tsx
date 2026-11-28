@@ -4,17 +4,11 @@ import type { DimensionValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
+import { Shimmer } from "./SkeletonLoader";
+
 const departments = [0, 1, 2, 3, 4];
 
-export default function StorefrontSkeleton({
-  desktop,
-  heroHeight,
-}: {
-  desktop: boolean;
-  heroHeight: number;
-}) {
-  const colors = useColors();
-  const { top } = useSafeAreaInsets();
+function DesktopPulse({ children }: React.PropsWithChildren) {
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -60,6 +54,23 @@ export default function StorefrontSkeleton({
     };
   }, [opacity]);
 
+  return (
+    <Animated.View style={{ opacity }} aria-hidden>
+      {children}
+    </Animated.View>
+  );
+}
+
+export default function StorefrontSkeleton({
+  desktop,
+  heroHeight,
+}: {
+  desktop: boolean;
+  heroHeight: number;
+}) {
+  const colors = useColors();
+  const { top } = useSafeAreaInsets();
+  const Motion = desktop ? DesktopPulse : Shimmer;
   const fill = colors.background === "#FFFFFF" ? "#DFE7ED" : colors.border;
   const block = (
     height: number,
@@ -78,7 +89,7 @@ export default function StorefrontSkeleton({
         { paddingTop: top, backgroundColor: colors.background },
       ]}
     >
-      <Animated.View style={{ opacity }} aria-hidden>
+      <Motion>
         <View style={styles.header}>
           {block(25, 55)}
           <View style={{ flex: 1 }}>{block(36)}</View>
@@ -123,7 +134,7 @@ export default function StorefrontSkeleton({
             </View>
           ))}
         </View>
-      </Animated.View>
+      </Motion>
     </View>
   );
 }

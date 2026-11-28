@@ -143,6 +143,7 @@ interface RequestOptions {
   body?: unknown;
   auth?: boolean;
   timeoutMs?: number;
+  signal?: AbortSignal;
 }
 
 async function fetchWithTimeout(
@@ -151,11 +152,15 @@ async function fetchWithTimeout(
   timeoutMs = 7000,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const cancel = () => controller.abort();
+  if (init.signal?.aborted) cancel();
+  else init.signal?.addEventListener("abort", cancel);
+  const timer = setTimeout(cancel, timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timer);
+    init.signal?.removeEventListener("abort", cancel);
   }
 }
 
@@ -182,6 +187,7 @@ export async function apiRequest<T = unknown>(
       `${getApiBaseUrl()}${path}`,
       {
         method,
+        signal: options.signal,
         headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
       },
@@ -286,7 +292,7 @@ export const api = {
 
   // Products
   products: {
-    list: async (params?: Record<string, string | number | boolean>) => {
+    list: async (params?: Record<string, string | number | boolean>, signal?: AbortSignal) => {
       const qs = params
         ? "?" +
           new URLSearchParams(
@@ -301,7 +307,7 @@ export const api = {
           total: number;
           page: number;
           limit: number;
-        }>(`/products${qs}`, { auth: false });
+        }>(`/products${qs}`, { auth: false, signal });
         if (
           res.data.length === 0 &&
           !params?.q &&
@@ -317,7 +323,8 @@ export const api = {
           };
         }
         return res;
-      } catch {
+      } catch (error) {
+        if (signal?.aborted) throw error;
         return filterDemoProducts(params) as {
           data: ApiProduct[];
           total: number;

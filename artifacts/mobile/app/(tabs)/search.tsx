@@ -1,3 +1,4 @@
+import { ProductGridSkeleton } from "@/components/SkeletonLoader";
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
@@ -72,16 +73,20 @@ export default function Categories() {
     let active = true;
     setLoading(true);
     setError(false);
+    const controller = new AbortController();
     const timer = setTimeout(
       () =>
         api.products
-          .list({
-            q: query,
-            category,
-            sort: section === "new" ? "newest" : "popular",
-            page,
-            limit: 20,
-          })
+          .list(
+            {
+              q: query.trim(),
+              category,
+              sort: section === "new" ? "newest" : "popular",
+              page,
+              limit: 20,
+            },
+            controller.signal,
+          )
           .then((result) => {
             if (active) {
               setItems((previous) =>
@@ -98,11 +103,12 @@ export default function Categories() {
           .finally(() => {
             if (active) setLoading(false);
           }),
-      220,
+      query.trim() && page === 1 ? 180 : 0,
     );
     return () => {
       active = false;
       clearTimeout(timer);
+      controller.abort();
     };
   }, [query, category, section, page, retry]);
   const browse = (slug: string, title: string) =>
@@ -239,7 +245,7 @@ export default function Categories() {
             {query ? "Products" : "Recommended"}
           </Text>
           {loading && page === 1 ? (
-            <LoadState loading />
+            <ProductGridSkeleton />
           ) : error ? (
             <LoadState error="load" retry={() => setRetry((n) => n + 1)} />
           ) : items.length ? (
@@ -247,7 +253,8 @@ export default function Categories() {
           ) : (
             <LoadState empty="No products found" />
           )}
-          {more && !error && (
+          {loading && page > 1 && <ProductGridSkeleton />}
+          {more && !loading && !error && (
             <TouchableOpacity
               disabled={loading}
               onPress={() => setPage((p) => p + 1)}
