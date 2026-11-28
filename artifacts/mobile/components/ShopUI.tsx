@@ -12,6 +12,7 @@ import { Text } from "./Text";
 import { TextInput } from "./TextInput";
 import { useColors } from "@/hooks/useColors";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
+import { PageSkeleton } from "./PageSkeleton";
 import { ProductGridSkeleton } from "./SkeletonLoader";
 import ProductCard from "./ProductCard";
 import { Product } from "@/constants/data";
@@ -153,15 +154,17 @@ export function LoadState({
   error,
   retry,
   empty = "Nothing here just yet",
+  skeletonPage,
 }: {
   loading?: boolean;
   error?: string | null;
   retry?: () => void;
   empty?: string;
+  skeletonPage?: string;
 }) {
   const c = useColors();
   const desktop = useDesktopWeb();
-  if (loading && !desktop) return <ProductGridSkeleton />;
+  if (loading && !desktop) return skeletonPage ? <PageSkeleton pathname={skeletonPage} contentOnly /> : <ProductGridSkeleton />;
   return (
     <View style={s.empty}>
       {loading ? (

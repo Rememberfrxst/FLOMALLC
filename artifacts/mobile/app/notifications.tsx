@@ -65,7 +65,7 @@ export default function Notifications() {
           </TouchableOpacity>
         </View>
       ) : loading ? (
-        <LoadState loading />
+        <LoadState loading skeletonPage="/notifications" />
       ) : error ? (
         <LoadState error="load" retry={() => setRetry((n) => n + 1)} />
       ) : !items.length ? (

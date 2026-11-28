@@ -72,7 +72,7 @@ export default function Offers() {
       </View>
 
       {query.isPending ? (
-        <LoadState loading />
+        <LoadState loading skeletonPage="/offers" />
       ) : query.isError ? (
         <LoadState
           error="load"

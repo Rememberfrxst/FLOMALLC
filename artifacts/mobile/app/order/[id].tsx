@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/PageSkeleton";
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/Text';
@@ -59,6 +60,7 @@ export default function OrderDetailScreen() {
     else router.replace('/(tabs)/orders');
   };
 
+  if (loading && !desktop) return <PageSkeleton pathname="/order" contentOnly />;
   if (loading) {
     return (
       <View style={[styles.notFound, { backgroundColor: colors.background }]}>

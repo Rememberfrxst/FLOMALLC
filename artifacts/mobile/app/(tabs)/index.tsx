@@ -2,11 +2,8 @@ import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   ScrollView,
-  Animated,
-  Platform,
   TouchableOpacity,
   StyleSheet,
-  RefreshControl,
   useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
@@ -24,7 +21,7 @@ import ProductFiltersBar, { ProductFilters } from "@/components/ProductFilters";
 import { useColors } from "@/hooks/useColors";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
 import { useStorefront } from "@/hooks/useStorefront";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { HomeRefreshScroll } from "@/components/HomeRefreshScroll";
 import { useOffers } from "@/hooks/useOffers";
 import { DesktopStoreFooter } from "@/components/DesktopStoreFooter";
 import {
@@ -72,8 +69,6 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const desktop = useDesktopWeb();
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const reducedMotion = useReducedMotion();
   const store = useStorefront();
   const offers = useOffers();
   const requestSequence = useRef(0);
@@ -92,7 +87,6 @@ export default function Home() {
   const [fetchingMore, setFetchingMore] = useState(false);
   const [query, setQuery] = useState("");
   const [initialLoad, setInitialLoad] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const params = {
     category: active,
@@ -128,7 +122,6 @@ export default function Home() {
       if (sequence === requestSequence.current) {
         setLoading(false);
         setInitialLoad(false);
-        setRefreshing(false);
       }
     }
   }, [
@@ -147,11 +140,6 @@ export default function Home() {
       };
     }, [load]),
   );
-
-  const refresh = () => {
-    setRefreshing(true);
-    void load();
-  };
 
   const loadMore = async () => {
     const sequence = requestSequence.current;
@@ -538,23 +526,10 @@ export default function Home() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <Animated.View
+      <View
         testID="home-mobile-header"
         style={[
           s.mobileHeader,
-          !reducedMotion && {
-            zIndex: 1,
-            transform: [
-              {
-                scaleY: scrollY.interpolate({
-                  inputRange: [-100, 0, 96],
-                  outputRange: [1.12, 1, 0.94],
-                  extrapolate: "clamp",
-                }),
-              },
-            ],
-            transformOrigin: "top",
-          },
           {
             paddingTop: insets.top,
             backgroundColor: c.card,
@@ -569,24 +544,8 @@ export default function Home() {
             router.push({ pathname: "/products", params: { q } })
           }
         />
-      </Animated.View>
-      <Animated.ScrollView
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: Platform.OS !== "web" },
-        )}
-        testID="home-screen"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={c.foreground}
-          />
-        }
-      >
+      </View>
+      <HomeRefreshScroll onRefresh={load}>
         <DepartmentTabs
           tabs={departments}
           active={active}
@@ -597,35 +556,7 @@ export default function Home() {
           }}
         />
         {banners.length > 0 && (
-          <View style={{ overflow: "hidden" }}>
-            <Animated.View
-              testID="home-stretch-banner"
-              style={
-                reducedMotion
-                  ? undefined
-                  : {
-                      transform: [
-                        {
-                          scale: scrollY.interpolate({
-                            inputRange: [-120, 0, heroHeight],
-                            outputRange: [1.2, 1, 1.12],
-                            extrapolate: "clamp",
-                          }),
-                        },
-                        {
-                          translateY: scrollY.interpolate({
-                            inputRange: [0, heroHeight],
-                            outputRange: [0, -heroHeight * 0.045],
-                            extrapolate: "clamp",
-                          }),
-                        },
-                      ],
-                    }
-              }
-            >
-              <CampaignCarousel banners={banners} height={heroHeight} />
-            </Animated.View>
-          </View>
+          <CampaignCarousel banners={banners} height={heroHeight} />
         )}
         <TouchableOpacity
           accessibilityRole="button"
@@ -821,7 +752,7 @@ export default function Home() {
             </TouchableOpacity>
           )}
         </View>
-      </Animated.ScrollView>
+      </HomeRefreshScroll>
     </View>
   );
 }

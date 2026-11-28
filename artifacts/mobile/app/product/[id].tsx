@@ -121,6 +121,7 @@ export default function ProductDetail() {
       >
         <StoreHeader back />
         <LoadState
+          skeletonPage="/product"
           loading={loading}
           error={error ? "load" : null}
           retry={load}

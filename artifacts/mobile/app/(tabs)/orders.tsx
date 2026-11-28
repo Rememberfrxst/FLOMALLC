@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/components/PageSkeleton";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View, Image, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/Text';
@@ -276,9 +277,7 @@ export default function OrdersScreen() {
       </View>
 
       {loading && orders.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <PageSkeleton pathname="/orders" contentOnly />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
           {shown.length === 0 ? (
