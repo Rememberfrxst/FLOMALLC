@@ -60,6 +60,7 @@ export const DEMO_OFFERS: DemoOfferItem[] = [
     maxDiscount: "1000",
     validUntil: null,
   },
+  {id: "coup-25", code: "FLOMA25", discountType: "percentage", discountValue: "25", minOrderValue: "999", maxDiscount: "750", validUntil:null},
   {
     id: "coup-4",
     code: "FLOMA20",

@@ -34,6 +34,7 @@ export default function ProductListing({
       title?: string;
       sort?: string;
       slug?: string;
+      edit?: string;
     }>(),
     category = categoryOverride ?? params.category ?? params.slug ?? "";
   const [query, setQuery] = useState(params.q || ""),
@@ -74,6 +75,7 @@ export default function ProductListing({
     () => setPage(1),
     [
       query,
+      params.edit,
       category,
       filters.sort,
       filters.minPrice,
@@ -91,7 +93,7 @@ export default function ProductListing({
         () =>
           api.products
             .list({
-              q: query.trim(),
+              q: query.trim() || (params.edit === "fandom" ? "oversized" : ""),
               category,
               sort: filters.sort,
               page,
@@ -129,6 +131,7 @@ export default function ProductListing({
       };
     }, [
       query,
+      params.edit,
       category,
       filters.sort,
       filters.minPrice,

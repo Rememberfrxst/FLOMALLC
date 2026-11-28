@@ -103,13 +103,14 @@ export default function StorefrontSkeleton({
           ))}
         </View>
         {block(heroHeight, "100%", 0)}
+        {!desktop && <View style={{ padding: 8 }}>{block(54)}</View>}
         <View style={styles.row}>
           {block(16, "62%")}
           {block(16, "23%")}
         </View>
         {(desktop ? [0] : [0, 1]).map((row) => (
           <View key={row} style={styles.row}>
-            {departments.map((index) => (
+            {departments.slice(0, desktop ? 5 : 4).map((index) => (
               <View key={index} style={styles.category}>
                 <View
                   style={{
@@ -117,7 +118,7 @@ export default function StorefrontSkeleton({
                     width: "100%",
                     maxWidth: 80,
                     aspectRatio: 1,
-                    borderRadius: 999,
+                    borderRadius: desktop ? 999 : 12,
                   }}
                 />
                 {block(10, "76%")}

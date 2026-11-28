@@ -907,6 +907,7 @@ async function main() {
   );
 
   const demoCoupons = [
+    { code: "FLOMA25", discountType: "percentage" as const, discountValue: "25", minOrderValue: "999", maxDiscount: "750", isActive: true },
     {
       code: "DEMO10",
       discountType: "percentage" as const,
@@ -964,9 +965,9 @@ async function main() {
     .onConflictDoNothing();
 
   console.log(
-    `Demo ready: ${categoryIds.size} categories, ${seededProducts.size} products, 3 banners and 3 coupons.`,
+    `Demo ready: ${categoryIds.size} categories, ${seededProducts.size} products, ${bannerSeedList.length} banners and ${demoCoupons.length} coupons.`,
   );
-  console.log("Coupons: DEMO10, FIRST200, STYLE15");
+  console.log("Coupons:", demoCoupons.map(c => c.code).join(", "));
 }
 
 main()

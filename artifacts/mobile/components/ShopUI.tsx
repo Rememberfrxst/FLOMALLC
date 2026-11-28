@@ -220,7 +220,8 @@ export function openBanner(b: { linkType?: string; linkValue?: string }) {
     router.push("/(tabs)/search");
     return;
   }
-  if (b.linkType === "product") router.push(`/product/${b.linkValue}`);
+  if (b.linkType === "search") router.push({pathname: "/products", params: {q: b.linkValue}});
+  else if (b.linkType === "product") router.push(`/product/${b.linkValue}`);
   else if (b.linkType === "category") router.push(`/category/${b.linkValue}`);
   else if (/^https?:\/\//i.test(b.linkValue)) void Linking.openURL(b.linkValue);
 }

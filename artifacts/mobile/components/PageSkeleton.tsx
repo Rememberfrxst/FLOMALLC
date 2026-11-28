@@ -77,7 +77,7 @@ export function PageSkeleton({
     return (
       <StorefrontSkeleton
         desktop={false}
-        heroHeight={Math.min(400, Math.max(220, width * 0.72))}
+        heroHeight={Math.min(330, Math.max(180, width * 0.51))}
       />
     );
   switch (page) {

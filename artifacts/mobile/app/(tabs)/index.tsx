@@ -14,7 +14,10 @@ import { Text } from "@/components/Text";
 import { Icon } from "@/components/StoreIcon";
 import { ProductGrid, LoadState, openBanner } from "@/components/ShopUI";
 import { StoreHeader, DepartmentTabs } from "@/components/StoreHeader";
-import CampaignCarousel from "@/components/CampaignCarousel";
+import { HomeFashionEdits } from "@/components/HomeFashionEdits";
+import CampaignCarousel, {
+  type CampaignSlide,
+} from "@/components/CampaignCarousel";
 import CategoryThumbnail from "@/components/CategoryThumbnail";
 import StorefrontSkeleton from "@/components/StorefrontSkeleton";
 import ProductFiltersBar, { ProductFilters } from "@/components/ProductFilters";
@@ -32,6 +35,30 @@ import {
   mapApiProduct,
 } from "@/services/api";
 import { formatPrice } from "@/constants/data";
+
+const seasonalBanners: CampaignSlide[] = [
+  {
+    id: "floma-black-friday",
+    title: "BLACK FRIDAY",
+    subtitle: "Streetwear, denim & weekend deals.",
+    imageUrl: "",
+    artwork: require("../../assets/campaigns/black-friday.webp"),
+    accent: "#E3FF63",
+    linkType: "offers",
+    isActive: true,
+  },
+  {
+    id: "floma-winter",
+    title: "WINTER SALE",
+    subtitle: "Puffers, soft knits & cold-weather layers.",
+    imageUrl: "",
+    artwork: require("../../assets/campaigns/winter.webp"),
+    accent: "#D6F1FF",
+    linkType: "search",
+    linkValue: "winter",
+    isActive: true,
+  },
+];
 
 function EditorialHeading({ title }: { title: string }) {
   const c = useColors();
@@ -166,7 +193,9 @@ export default function Home() {
       !cat.parentId || !cats.some((parent) => parent.id === cat.parentId),
   );
   const tiles = active ? cats.filter((cat) => cat.parentId === active) : roots;
-  const displayTiles = tiles.length ? tiles : roots;
+  const displayTiles = tiles.length
+    ? tiles
+    : roots.filter((cat) => cat.id === active);
   const browse = (sort: string, title: string, category = "") =>
     router.push({ pathname: "/products", params: { sort, title, category } });
 
@@ -178,7 +207,7 @@ export default function Home() {
   const featured = allLoaded.filter((p) => p.isFeatured);
   const heroHeight = desktop
     ? Math.min(480, Math.max(360, width * 0.34))
-    : Math.min(400, Math.max(220, width * 0.72));
+    : Math.min(330, Math.max(180, width * 0.51));
 
   if (initialLoad) {
     return <StorefrontSkeleton desktop={desktop} heroHeight={heroHeight} />;
@@ -497,17 +526,23 @@ export default function Home() {
   }
 
   const tileSize = Math.min(92, (width - 52) / 5);
-  const offer = offers[0];
-  const discount = offer
-    ? offer.discountType === "percentage"
-      ? `${Number(offer.discountValue)}% off`
-      : `${formatPrice(Number(offer.discountValue))} off`
-    : null;
+  const offer =
+    offers.find(
+      (o) => o.discountType === "percentage" && Number(o.discountValue) === 25,
+    ) ?? offers[0];
+  const savings =
+    offer?.discountType === "percentage"
+      ? `${Number(offer.discountValue)}%`
+      : formatPrice(Number(offer?.discountValue ?? 0));
   const departments = [
     { id: "", name: "All" },
-    ...roots.map((cat) => ({ id: cat.id, name: cat.name })),
-    { id: "__fresh", name: "Fresh Fits" },
+    ...["women", "men"].flatMap((slug) => {
+      const department = roots.find((cat) => cat.slug === slug);
+      return department ? [{ id: department.id, name: department.name }] : [];
+    }),
     { id: "__offers", name: "Offers" },
+    { id: "__fandom", name: "Fandom" },
+    { id: "__trending", name: "Trending" },
   ];
   const sections = [
     {
@@ -532,12 +567,13 @@ export default function Home() {
           s.mobileHeader,
           {
             paddingTop: insets.top,
-            backgroundColor: c.card,
-            borderColor: c.border,
+            backgroundColor: "#141216",
+            borderColor: "#141216",
           },
         ]}
       >
         <StoreHeader
+          inverse
           query={query}
           onChangeQuery={setQuery}
           onSearch={(q) =>
@@ -546,58 +582,80 @@ export default function Home() {
         />
       </View>
       <HomeRefreshScroll onRefresh={load}>
-        <DepartmentTabs
-          tabs={departments}
-          active={active}
-          onChange={(id) => {
-            if (id === "__offers") router.push("/offers");
-            else if (id === "__fresh") router.push("/(tabs)/fresh-fits");
-            else setActive(id);
-          }}
+        <View style={{ backgroundColor: "#141216" }}>
+          <DepartmentTabs
+            inverse
+            compact
+            tabs={departments}
+            active={active}
+            onChange={(id) => {
+              if (id === "__offers") router.push("/offers");
+              else if (id === "__trending") browse("popular", "Trending");
+              else if (id === "__fandom") {
+                const fandom = cats.find((cat) => cat.slug === "fandom");
+                if (fandom) browse("popular", "Fandom", fandom.slug);
+                else
+                  router.push({
+                    pathname: "/products",
+                    params: { title: "Fandom", edit: "fandom" },
+                  });
+              } else setActive(id);
+            }}
+          />
+        </View>
+        <CampaignCarousel
+          banners={[...seasonalBanners, ...banners]}
+          height={heroHeight}
         />
-        {banners.length > 0 && (
-          <CampaignCarousel banners={banners} height={heroHeight} />
-        )}
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => router.push("/offers")}
           style={s.savingsStrip}
         >
-          <Icon name="pricetag-outline" size={17} color="#402716" />
-          <Text style={s.savingsText}>
-            {offer ? `${discount} with ${offer.code}` : "Shop store offers"}
+          <Icon name="pricetag-outline" size={19} color="#141216" />
+          <Text adjustsFontSizeToFit numberOfLines={1} style={s.savingsText}>
+            {offer ? `GET ${savings} OFF` : "SHOP OFFERS"}
           </Text>
-          <Icon name="chevron-forward" size={17} color="#402716" />
-        </TouchableOpacity>
-        {displayTiles.length > 0 && (
-          <View style={s.mobileSection}>
-            <Text style={[s.mobileTitle, { color: c.foreground }]}>
-              Shop by category
-            </Text>
-            <View style={s.categoryGrid}>
-              {displayTiles.slice(0, 15).map((cat) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Shop ${cat.name}`}
-                  onPress={() => browse("popular", cat.name, cat.slug)}
-                  style={s.categoryTile}
-                >
-                  <CategoryThumbnail
-                    category={cat}
-                    size={tileSize}
-                    radius={tileSize / 2}
-                  />
-                  <Text
-                    numberOfLines={2}
-                    style={[s.categoryLabel, { color: c.foreground }]}
-                  >
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          {offer && (
+            <View style={s.couponStub}>
+              <Text style={s.codeLabel}>USE CODE</Text>
+              <Text style={s.couponCode}>{offer.code}</Text>
             </View>
-          </View>
+          )}
+        </TouchableOpacity>
+        {!active ? (
+          <HomeFashionEdits />
+        ) : (
+          displayTiles.length > 0 && (
+            <View style={s.mobileSection}>
+              <Text style={[s.mobileTitle, { color: c.foreground }]}>
+                Shop {roots.find((cat) => cat.id === active)?.name}
+              </Text>
+              <View style={s.categoryGrid}>
+                {displayTiles.slice(0, 15).map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Shop ${cat.name}`}
+                    onPress={() => browse("popular", cat.name, cat.slug)}
+                    style={s.categoryTile}
+                  >
+                    <CategoryThumbnail
+                      category={cat}
+                      size={tileSize}
+                      radius={tileSize / 2}
+                    />
+                    <Text
+                      numberOfLines={2}
+                      style={[s.categoryLabel, { color: c.foreground }]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )
         )}
         <View style={[s.benefits, { backgroundColor: c.secondary }]}>
           <TouchableOpacity
@@ -698,7 +756,7 @@ export default function Home() {
 
         {banners.length > 1 && (
           <CampaignCarousel
-            banners={banners.slice(1)}
+            banners={[seasonalBanners[1], ...banners.slice(1)]}
             height={Math.max(170, width * 0.42)}
           />
         )}
@@ -951,18 +1009,44 @@ const s = StyleSheet.create({
     letterSpacing: -0.45,
   },
   savingsStrip: {
-    backgroundColor: "#F7D8A8",
+    backgroundColor: "#DDFF42",
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: 10,
+    marginHorizontal: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    minHeight: 54,
+    borderRadius: 4,
   },
   savingsText: {
     flex: 1,
-    color: "#402716",
-    fontSize: 14,
+    color: "#121410",
     fontFamily: "GoogleSans_700Bold",
+    fontSize: 24,
+    letterSpacing: -0.85,
+  },
+  couponStub: {
+    paddingLeft: 12,
+    borderLeftWidth: 1,
+    borderColor: "#7D9425",
+    alignItems: "center",
+    gap: 1,
+  },
+  codeLabel: {
+    color: "#233000",
+    fontSize: 9,
+    letterSpacing: 1,
+    fontFamily: "GoogleSans_700Bold",
+  },
+  couponCode: {
+    backgroundColor: "#151713",
+    color: "#F3FFD0",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontSize: 12,
+    fontFamily: "GoogleSans_700Bold",
+    borderRadius: 3,
   },
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 12 },
   categoryTile: {

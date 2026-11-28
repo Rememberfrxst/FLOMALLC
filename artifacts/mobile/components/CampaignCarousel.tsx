@@ -14,6 +14,8 @@ import { Icon } from "./StoreIcon";
 import { openBanner } from "./ShopUI";
 import type { ApiBanner } from "@/services/api";
 
+export type CampaignSlide = ApiBanner & { artwork?: number; accent?: string };
+
 export default function CampaignCarousel({
   banners,
   height = 220,
@@ -21,7 +23,7 @@ export default function CampaignCarousel({
   desktop = false,
   slideWidth,
 }: {
-  banners: ApiBanner[];
+  banners: CampaignSlide[];
   height?: number;
   headerSpace?: number;
   desktop?: boolean;
@@ -80,7 +82,8 @@ export default function CampaignCarousel({
             style={{ width, height, backgroundColor: "#1F2937" }}
           >
             <Image
-              source={{ uri: b.imageUrl }}
+              source={b.artwork ?? { uri: b.imageUrl }}
+              contentPosition={b.artwork ? {left:"74%", top:"50%"} : "center"}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
             />
@@ -88,10 +91,10 @@ export default function CampaignCarousel({
               colors={
                 desktop
                   ? ["rgba(18,26,34,0.18)", "rgba(18,26,34,0.12)", "rgba(18,26,34,0.58)"]
-                  : ["rgba(0,0,0,.4)", "rgba(0,0,0,.05)", "rgba(0,0,0,.4)"]
+                  : b.artwork ? ["rgba(0,0,0,.56)", "rgba(0,0,0,.18)", "transparent"] : ["rgba(0,0,0,.4)", "rgba(0,0,0,.05)", "rgba(0,0,0,.4)"]
               }
-              start={desktop ? { x: 0, y: 0.5 } : { x: 0.5, y: 0 }}
-              end={desktop ? { x: 1, y: 0.5 } : { x: 0.5, y: 1 }}
+              start={desktop || b.artwork ? { x: 0, y: 0.5 } : { x: 0.5, y: 0 }}
+              end={desktop || b.artwork ? { x: 1, y: 0.5 } : { x: 0.5, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
             {desktop ? (
@@ -140,6 +143,7 @@ export default function CampaignCarousel({
                     numberOfLines={2}
                     style={[
                       s.title,
+                      !!b.artwork && { fontSize: Math.min(width * 0.102, 48), lineHeight: Math.min(width * 0.104, 50), letterSpacing: -1.6, maxWidth: width * 0.52 },
                       height < 190 && { fontSize: 18, lineHeight: 21 },
                     ]}
                   >
@@ -160,12 +164,13 @@ export default function CampaignCarousel({
                 <View
                   style={[
                     s.cta,
+                    b.accent && { backgroundColor: b.accent, borderRadius: 3 },
                     height < 190 && { marginTop: 7, paddingVertical: 5 },
                   ]}
                 >
                   <Text
                     style={{
-                      color: "#fff",
+                      color: b.accent ? "#111" : "#fff",
                       fontSize: 10,
                       fontFamily: "GoogleSans_700Bold",
                     }}

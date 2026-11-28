@@ -218,24 +218,27 @@ export function DepartmentTabs({
   active,
   onChange,
   inverse = false,
+  compact = false,
 }: {
   tabs: { id: string; name: string }[];
   active: string;
   onChange: (id: string) => void;
   inverse?: boolean;
+  compact?: boolean;
 }) {
   const c = useColors();
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.tabs}
+      contentContainerStyle={[s.tabs, compact && { flexGrow: 1, justifyContent: "space-between", gap: 14, height: 39 }]}
     >
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.id}
           accessibilityRole="tab"
           accessibilityState={{ selected: tab.id === active }}
+          aria-selected={tab.id === active}
           onPress={() => onChange(tab.id)}
           style={[
             s.tab,

@@ -266,14 +266,16 @@ export default function ProductCard({
       >
         {!compact && (
           <TouchableOpacity onPress={onPress}>
-            <Text numberOfLines={2} style={[s.name, { color: c.foreground }]}>
+            <View style={s.nameRow}>
               {p.discount > 0 && (
-                <Text style={{ color: c.accent, fontSize: 10 }}>
-                  -{p.discount}%{" "}
-                </Text>
+                <View testID="product-discount-badge" style={s.discountBadge}>
+                  <Text style={s.discountText}>-{p.discount}%</Text>
+                </View>
               )}
-              {p.name}
-            </Text>
+              <Text numberOfLines={2} style={[s.name, { color: c.foreground, flex: 1 }]}>
+                {p.name}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
         <View style={s.priceRow}>
@@ -341,6 +343,9 @@ const s = StyleSheet.create({
   photo: { aspectRatio: 0.76, width: "100%" },
   placeholder: { flex: 1, alignItems: "center", justifyContent: "center" },
   info: { paddingHorizontal: 5, paddingTop: 7, paddingBottom: 13 },
+  nameRow: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
+  discountBadge: { backgroundColor: "#C10015", borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
+  discountText: { color: "#FFF", fontSize: 10, lineHeight: 16, fontFamily: "GoogleSans_700Bold" },
   name: { fontSize: 11, lineHeight: 18, minHeight: 36 },
   priceRow: {
     flexDirection: "row",

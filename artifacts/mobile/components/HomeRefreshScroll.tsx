@@ -11,16 +11,15 @@ import { Animated, Platform, ScrollView, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Image } from "expo-image";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useColors } from "@/hooks/useColors";
 
 const holdHeight = 66;
+const maxStretch = 142;
 const threshold = 88;
 
 export function HomeRefreshScroll({
   children,
   onRefresh,
 }: React.PropsWithChildren<{ onRefresh: () => Promise<void> }>) {
-  const c = useColors();
   const reduced = useReducedMotion();
   const container = useRef<View>(null);
   const offset = useRef(0);
@@ -54,16 +53,24 @@ export function HomeRefreshScroll({
       }
       if (dy <= 4 && state.distance === 0) return;
       state.distance = Math.max(0, dy);
-      pull.setValue(Math.min(110, state.distance * 0.65));
+      pull.setValue(maxStretch * (1 - Math.exp(-state.distance / 132)));
       setShown(true);
     },
     [pull],
   );
   const settle = useCallback(
     (height: number) => {
-      Animated.timing(pull, {
+      if (reduced) {
+        pull.setValue(height);
+        if (!height) setShown(false);
+        return;
+      }
+      Animated.spring(pull, {
         toValue: height,
-        duration: reduced ? 0 : 180,
+        stiffness: 210,
+        damping: 24,
+        mass: 0.85,
+        overshootClamping: true,
         useNativeDriver: false,
       }).start(({ finished }) => {
         if (finished && !height && mounted.current) setShown(false);
@@ -175,7 +182,7 @@ export function HomeRefreshScroll({
         style={{
           height: pull,
           overflow: "hidden",
-          backgroundColor: c.navy,
+          backgroundColor: "#141216",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -204,8 +211,8 @@ export function HomeRefreshScroll({
               scaleY: reduced
                 ? 1
                 : pull.interpolate({
-                    inputRange: [0, 110],
-                    outputRange: [1, 1.045],
+                    inputRange: [0, maxStretch],
+                    outputRange: [1, 1.07],
                     extrapolate: "clamp",
                   }),
             },
