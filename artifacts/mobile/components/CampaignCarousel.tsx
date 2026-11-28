@@ -70,7 +70,7 @@ export default function CampaignCarousel({
           setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))
         }
       >
-        {banners.map((b, idx) => (
+        {banners.map((b) => (
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={b.title || "Shop campaign"}
@@ -111,9 +111,6 @@ export default function CampaignCarousel({
                       : null,
                   ]}
                 >
-                  <Text style={s.desktopBrandTag}>
-                    FLOMA CURATED · EDIT {String(idx + 1).padStart(2, "0")}
-                  </Text>
                   {!!b.title && (
                     <Text numberOfLines={2} style={s.desktopTitle}>
                       {b.title}
@@ -125,7 +122,6 @@ export default function CampaignCarousel({
                       {b.subtitle}
                     </Text>
                   )}
-                  <Text style={s.desktopOfferLine}>MIN. 30–50% OFF*</Text>
                   <View style={s.desktopCta}>
                     <Text style={s.desktopCtaText}>SHOP NOW ›</Text>
                   </View>
@@ -315,16 +311,6 @@ const s = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
   },
-  desktopBrandTag: {
-    fontSize: 10.5,
-    letterSpacing: 1.8,
-    color: "#FDE68A",
-    fontFamily: "GoogleSans_700Bold",
-    marginBottom: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
-  },
   desktopTitle: {
     fontSize: 24,
     lineHeight: 30,
@@ -351,16 +337,6 @@ const s = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.40)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-  },
-  desktopOfferLine: {
-    fontSize: 19,
-    color: "#FFFFFF",
-    fontFamily: "GoogleSans_700Bold",
-    letterSpacing: 0.6,
-    marginBottom: 16,
-    textShadowColor: "rgba(0, 0, 0, 0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
   },
   desktopCta: {
     borderWidth: 1,
