@@ -16,6 +16,9 @@ import { useCart } from "@/context/CartContext";
 import { useDesktopWeb } from "@/hooks/useDesktopWeb";
 import { DesktopStoreHeader } from "./DesktopStoreHeader";
 
+export const STORE_HEADER_HEIGHT = 56;
+export const COMPACT_TABS_HEIGHT = 39;
+
 const LOGO_TRANSPARENT = require("@/assets/images/logo-transparent.png");
 
 export function StoreHeader({
@@ -231,7 +234,7 @@ export function DepartmentTabs({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[s.tabs, compact && { flexGrow: 1, justifyContent: "space-between", gap: 14, height: 39 }]}
+      contentContainerStyle={[s.tabs, compact && { flexGrow: 1, justifyContent: "space-between", gap: 14, height: COMPACT_TABS_HEIGHT }]}
     >
       {tabs.map((tab) => (
         <TouchableOpacity
@@ -276,7 +279,7 @@ export function DepartmentTabs({
 
 const s = StyleSheet.create({
   header: {
-    height: 56,
+    height: STORE_HEADER_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,

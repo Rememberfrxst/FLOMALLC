@@ -163,6 +163,7 @@ export function HomeRefreshScroll({
   const scroll = (
     <ScrollView
       testID="home-screen"
+      stickyHeaderIndices={[0]}
       bounces={false}
       overScrollMode="never"
       onScroll={(e) => {
@@ -182,7 +183,7 @@ export function HomeRefreshScroll({
         style={{
           height: pull,
           overflow: "hidden",
-          backgroundColor: "#141216",
+          backgroundColor: "transparent",
           alignItems: "center",
           justifyContent: "center",
         }}

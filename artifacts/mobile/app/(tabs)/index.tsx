@@ -13,7 +13,12 @@ import { router, useFocusEffect } from "expo-router";
 import { Text } from "@/components/Text";
 import { Icon } from "@/components/StoreIcon";
 import { ProductGrid, LoadState, openBanner } from "@/components/ShopUI";
-import { StoreHeader, DepartmentTabs } from "@/components/StoreHeader";
+import {
+  StoreHeader,
+  DepartmentTabs,
+  STORE_HEADER_HEIGHT,
+  COMPACT_TABS_HEIGHT,
+} from "@/components/StoreHeader";
 import { HomeFashionEdits } from "@/components/HomeFashionEdits";
 import CampaignCarousel, {
   type CampaignSlide,
@@ -560,53 +565,48 @@ export default function Home() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
-      <View
-        testID="home-mobile-header"
-        style={[
-          s.mobileHeader,
-          {
-            paddingTop: insets.top,
-            backgroundColor: "#141216",
-            borderColor: "#141216",
-          },
-        ]}
-      >
-        <StoreHeader
-          inverse
-          query={query}
-          onChangeQuery={setQuery}
-          onSearch={(q) =>
-            router.push({ pathname: "/products", params: { q } })
-          }
-        />
-      </View>
+    <View
+      style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top }}
+    >
       <HomeRefreshScroll onRefresh={load}>
-        <View style={{ backgroundColor: "#141216" }}>
-          <DepartmentTabs
+        <View testID="home-mobile-header" style={s.mobileHeader}>
+          <StoreHeader
             inverse
-            compact
-            tabs={departments}
-            active={active}
-            onChange={(id) => {
-              if (id === "__offers") router.push("/offers");
-              else if (id === "__trending") browse("popular", "Trending");
-              else if (id === "__fandom") {
-                const fandom = cats.find((cat) => cat.slug === "fandom");
-                if (fandom) browse("popular", "Fandom", fandom.slug);
-                else
-                  router.push({
-                    pathname: "/products",
-                    params: { title: "Fandom", edit: "fandom" },
-                  });
-              } else setActive(id);
-            }}
+            query={query}
+            onChangeQuery={setQuery}
+            onSearch={(q) =>
+              router.push({ pathname: "/products", params: { q } })
+            }
           />
         </View>
-        <CampaignCarousel
-          banners={[...seasonalBanners, ...banners]}
-          height={heroHeight}
-        />
+        <View style={{ marginTop: -STORE_HEADER_HEIGHT }}>
+          <CampaignCarousel
+            banners={[...seasonalBanners, ...banners]}
+            height={heroHeight + STORE_HEADER_HEIGHT + COMPACT_TABS_HEIGHT}
+            headerSpace={STORE_HEADER_HEIGHT + COMPACT_TABS_HEIGHT}
+          />
+          <View testID="home-mobile-tabs" style={s.overlaidTabs}>
+            <DepartmentTabs
+              inverse
+              compact
+              tabs={departments}
+              active={active}
+              onChange={(id) => {
+                if (id === "__offers") router.push("/offers");
+                else if (id === "__trending") browse("popular", "Trending");
+                else if (id === "__fandom") {
+                  const fandom = cats.find((cat) => cat.slug === "fandom");
+                  if (fandom) browse("popular", "Fandom", fandom.slug);
+                  else
+                    router.push({
+                      pathname: "/products",
+                      params: { title: "Fandom", edit: "fandom" },
+                    });
+                } else setActive(id);
+              }}
+            />
+          </View>
+        </View>
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => router.push("/offers")}
@@ -1001,7 +1001,13 @@ const s = StyleSheet.create({
     fontFamily: "GoogleSans_700Bold",
   },
 
-  mobileHeader: { borderBottomWidth: StyleSheet.hairlineWidth },
+  mobileHeader: { backgroundColor: "transparent" },
+  overlaidTabs: {
+    position: "absolute",
+    top: STORE_HEADER_HEIGHT,
+    left: 0,
+    right: 0,
+  },
   mobileSection: { padding: 12, gap: 12 },
   mobileTitle: {
     fontSize: 21,
