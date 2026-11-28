@@ -316,7 +316,7 @@ const s = StyleSheet.create({
   search: {
     flex: 1,
     minWidth: 0,
-    height: 40,
+    height: 32,
     borderWidth: 1,
     borderRadius: 20,
     flexDirection: "row",
@@ -345,7 +345,8 @@ const s = StyleSheet.create({
     paddingRight: 4,
     fontSize: 13.5,
     fontFamily: "GoogleSans_400Regular",
-    height: 38,
+    height: 30,
+    paddingVertical: 0,
     outlineWidth: 0,
   } as any,
   clearBtn: {
@@ -355,7 +356,7 @@ const s = StyleSheet.create({
   },
   submit: {
     width: 36,
-    height: 36,
+    height: 30,
     flexShrink: 0,
     marginRight: 4,
     alignItems: "center",

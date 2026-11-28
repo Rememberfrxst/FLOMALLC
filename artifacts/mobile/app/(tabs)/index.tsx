@@ -1019,11 +1019,8 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginHorizontal: 8,
     marginTop: 8,
-    paddingHorizontal: 12,
     minHeight: 54,
-    borderRadius: 4,
   },
   savingsText: {
     flex: 1,

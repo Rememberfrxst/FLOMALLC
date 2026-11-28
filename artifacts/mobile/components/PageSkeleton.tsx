@@ -53,7 +53,7 @@ export function PageSkeleton({
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
       {block(28, 28, 14)}
-      <View style={{ flex: 1 }}>{block(40, "100%", 22)}</View>
+      <View style={{ flex: 1 }}>{block(32, "100%", 16)}</View>
       {block(28, 28, 14)}
     </View>
   );

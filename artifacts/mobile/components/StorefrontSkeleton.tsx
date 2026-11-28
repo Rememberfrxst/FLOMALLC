@@ -92,7 +92,7 @@ export default function StorefrontSkeleton({
       <Motion>
         <View style={styles.header}>
           {block(25, 55)}
-          <View style={{ flex: 1 }}>{block(36)}</View>
+          <View style={{ flex: 1 }}>{block(desktop ? 36 : 32, "100%", desktop ? 6 : 16)}</View>
           {block(26, 26, 13)}
         </View>
         <View style={styles.row}>
@@ -103,7 +103,7 @@ export default function StorefrontSkeleton({
           ))}
         </View>
         {block(heroHeight, "100%", 0)}
-        {!desktop && <View style={{ padding: 8 }}>{block(54)}</View>}
+        {!desktop && <View style={{ marginTop: 8 }}>{block(54, "100%", 0)}</View>}
         <View style={styles.row}>
           {block(16, "62%")}
           {block(16, "23%")}
